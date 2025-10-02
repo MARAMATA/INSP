@@ -1,0 +1,51 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:15
+    container_name: inspectia_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: inspectia_user
+      POSTGRES_PASSWORD: inspectia_pass
+      POSTGRES_DB: inspectia_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.12.1
+    container_name: inspectia_mlflow
+    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:///mlflow.db --default-artifact-root /mlruns
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlruns:/mlruns
+
+  api:
+    build: .
+    image: inspectia-backend:latest
+    container_name: inspectia_api
+    tty: true
+    stdin_open: true
+    environment:
+      - PORT=8000
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=inspectia_user
+      - DB_PASSWORD=inspectia_pass
+      - DB_NAME=inspectia_db
+      - DATABASE_URL=postgresql+asyncpg://inspectia_user:inspectia_pass@db:5432/inspectia_db
+    ports:
+      - "8000:8000"
+    command: ["python", "-m", "backend.src.main"]
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  mlruns:
+

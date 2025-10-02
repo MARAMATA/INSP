@@ -1,0 +1,43 @@
+{
+    "folders": [
+        {
+            "name": "InspectIA Backend",
+            "path": "."
+        }
+    ],
+    "settings": {
+        "python.defaultInterpreterPath": "/Users/macbook/Desktop/inspectia_app/backend/venv/bin/python",
+        "python.analysis.extraPaths": [
+            "/Users/macbook/Desktop/inspectia_app/backend/src"
+        ],
+        "python.analysis.autoImportCompletions": true,
+        "python.analysis.typeCheckingMode": "basic",
+        "python.analysis.autoSearchPaths": true,
+        "python.analysis.diagnosticMode": "workspace",
+        "python.analysis.stubPath": "/Users/macbook/Desktop/inspectia_app/backend/src",
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": false,
+        "python.linting.flake8Enabled": false,
+        "python.linting.mypyEnabled": false,
+        "python.linting.pycodestyleEnabled": false,
+        "python.terminal.activateEnvironment": true,
+        "python.terminal.activateEnvInCurrentTerminal": true,
+        "files.associations": {
+            "*.yaml": "yaml",
+            "*.yml": "yaml"
+        },
+        "yaml.schemas": {
+            "https://json.schemastore.org/github-workflow.json": ".github/workflows/*.{yml,yaml}",
+            "https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json": "docker-compose*.{yml,yaml}"
+        },
+        "python.envFile": "${workspaceFolder}/.env"
+    },
+    "extensions": {
+        "recommendations": [
+            "ms-python.python",
+            "ms-python.vscode-pylance",
+            "redhat.vscode-yaml",
+            "ms-vscode.vscode-json"
+        ]
+    }
+}

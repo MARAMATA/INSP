@@ -1,0 +1,44 @@
+# Résumé
+# ------
+# Paramétrage issu du questionnaire d'experts contrôle a posteriori.
+# - Mots/expressions déclencheurs (pharma & cosmétiques)
+# - Heuristiques usage domestique vs industriel (chap.84)
+# - Vérifications doc. (facture, B/L) si colonnes OCR existent
+# - Listes de vigilance: fournisseurs, modes de paiement, pays sensibles additionnels
+# - Seuils pragmatiques valeur/poids quand pas de référence TEC disponible
+
+common:
+  pays_sensibles_add: ["SY","IR","KP","RU"]         # complète les YAML chapitres
+  mode_paiement_risque: ["CASH","WESTERN_UNION","CRYPTO"]
+  supplier_watchlist: ["UNKNOWN SUPPLIER","OFFSHORE LTD","SHELL TRADING"]
+  invoice_required_fields: ["NUM_FACTURE","DATE_FACTURE","FOURNISSEUR","TOTAL_TTC"]
+  bl_required_fields: ["BL_NUM","BL_DATE","BL_NAVIRE","BL_PORT_CHARGEMENT","BL_PORT_DECHARGEMENT"]
+
+chap30:
+  pharma_suspicious_keywords:
+    - "CREME"
+    - "LOTION"
+    - "COMPLEMENT"
+    - "COMPLEMENT ALIMENTAIRE"
+    - "VITAMINE"
+    - "TONIC"
+    - "PRODUIT NATUREL"
+    - "PRODUIT VEGETAL"
+    - "HUILE"
+  # glissement 2106 → 30 (cosmétiques/parapharma représentés comme médicaments)
+  suspect_glissement_sources: ["2106","3304","3305","3307"]
+  # seuils pragmatiques si pas de table référence (CFA / kg ou unité)
+  fallback_min_value_cfa: 10000
+
+chap84:
+  # usage industriel si puissance ≥ 3kW par unité (règle heuristique)
+  power_kw_threshold_industrial: 3.0
+  # si QTE très petite mais valeur unitaire >> percentile 99 → suspicion "machine déguisée"
+  vu_high_quantile: 0.99
+
+chap85:
+  # certifications exigées pour catégories typiques (complète chap85.yaml)
+  categories_require_cert_extra: ["ONDULEUR","TRANSFORMATEUR","BATTERIE","CHARGEUR","TABLEAU ELECTRIQUE"]
+  # poids/valeur plausibles par défaut si pas de référence
+  fallback_min_weight_kg: 0.2
+  fallback_min_value_cfa: 20000

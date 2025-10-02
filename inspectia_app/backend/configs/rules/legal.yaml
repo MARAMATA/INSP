@@ -1,0 +1,25 @@
+# Résumé
+# ------
+# Références légales et TEC/CEDEAO utilisées dans les messages d'alerte et rapports.
+
+code_des_douanes:
+  ART_54: "Code des Douanes, art. 54 — Droit de communication / Notification et demandes de pièces"
+  ART_153: "Code des Douanes, art. 153 — Contrôle différé (réexamen post-mainlevée)"
+  ART_95: "Code des Douanes, art. 95 — Classement tarifaire et détermination de l’espèce"
+  ART_96: "Code des Douanes, art. 96 — Origine des marchandises"
+  ART_97: "Code des Douanes, art. 97 — Valeur en douane (méthodes)"
+  ART_112: "Code des Douanes, art. 112 — Régimes économiques (perfectionnement, entrepôt, admission temp.)"
+  ART_113: "Code des Douanes, art. 113 — Franchises/Exemptions (conditions)"
+
+tec_cedeao:
+  CHAP30: "TEC/CEDEAO — Chapitre 30 (Produits pharmaceutiques), notes et sous-positions"
+  CHAP84: "TEC/CEDEAO — Chapitre 84 (Machines et appareils), notes et RGI"
+  CHAP85: "TEC/CEDEAO — Chapitre 85 (Matériel électrique/électronique), notes et RGI"
+  RGI:    "TEC/CEDEAO — Règles Générales d’Interprétation (RGI) 1 à 6"
+  VAL:    "TEC/CEDEAO — Valeur en douane et droits/Taxes (DD, TVA, Autres)"
+
+regimes:
+  ECONOMIQUES: "Régimes économiques (perfectionnement actif, admission temporaire, entrepôt, drawback)"
+  SUSPENSIFS: "Régimes suspensifs / Exonérations (franchises spécifiques sectorielles)"
+  CONSOMMATION: "Mise à la consommation / IM4"
+  TRANSIT: "Transit / IM8"

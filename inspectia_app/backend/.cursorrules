@@ -1,0 +1,35 @@
+# Configuration Cursor IDE pour InspectIA
+# Python Interpreter
+python_interpreter: /Users/macbook/Desktop/inspectia_app/backend/venv/bin/python
+
+# Python Paths
+python_paths:
+  - /Users/macbook/Desktop/inspectia_app/backend/src
+  - /Users/macbook/Desktop/inspectia_app/backend/src/shared
+  - /Users/macbook/Desktop/inspectia_app/backend/src/chapters
+
+# Recommended Extensions
+recommended_extensions:
+  - ms-python.python
+  - ms-python.vscode-pylance
+  - redhat.vscode-yaml
+  - ms-vscode.vscode-json
+
+# Python Analysis Settings
+python_analysis:
+  type_checking_mode: basic
+  auto_import_completions: true
+  auto_search_paths: true
+  diagnostic_mode: workspace
+  stub_path: /Users/macbook/Desktop/inspectia_app/backend/src
+
+# YAML Settings
+yaml_settings:
+  schemas:
+    - https://json.schemastore.org/github-workflow.json
+    - https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json
+
+# Project Metadata
+project_name: InspectIA
+project_description: Système d'analyse automatisée des documents douaniers
+python_version: 3.11

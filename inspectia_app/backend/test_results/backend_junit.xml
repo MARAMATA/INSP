@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="3.174" timestamp="2025-09-01T15:39:03.384647+00:00" hostname="MacBook-Pro.local"><testcase classname="" name="tests.test_hybrid_model" time="0.000"><error message="collection failure">ImportError while importing test module '/Users/macbook/Desktop/inspectia_app/backend/tests/test_hybrid_model.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+venv/lib/python3.13/site-packages/_pytest/python.py:498: in importtestmodule
+    mod = import_path(
+venv/lib/python3.13/site-packages/_pytest/pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+/opt/homebrew/Cellar/python@3.13/3.13.2/Frameworks/Python.framework/Versions/3.13/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1331: in _find_and_load_unlocked
+    ???
+&lt;frozen importlib._bootstrap&gt;:935: in _load_unlocked
+    ???
+venv/lib/python3.13/site-packages/_pytest/assertion/rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests/test_hybrid_model.py:15: in &lt;module&gt;
+    from src.chapters.chap30.ml_model import HybridModel
+E   ImportError: cannot import name 'HybridModel' from 'src.chapters.chap30.ml_model' (/Users/macbook/Desktop/inspectia_app/backend/src/chapters/chap30/ml_model.py)</error></testcase></testsuite></testsuites>

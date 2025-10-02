@@ -1,0 +1,119 @@
+.
+├── .env
+├── .env.example
+├── .gitignore
+├── .pre-commit-config.yaml
+├── configs
+│   ├── base.yaml
+│   ├── chapters
+│   │   ├── chap30.yaml
+│   │   ├── chap84.yaml
+│   │   └── chap85.yaml
+│   ├── database
+│   │   └── database.yaml
+│   ├── environments
+│   │   ├── dev.yaml
+│   │   └── prod.yaml
+│   └── logging.yaml
+├── data
+│   ├── feedback
+│   ├── ocr
+│   │   ├── input
+│   │   ├── processed
+│   │   ├── temp
+│   │   └── training
+│   │       ├── certificats_origine
+│   │       ├── connaissements
+│   │       ├── declarations_douanieres
+│   │       ├── documents_transport
+│   │       ├── dpi
+│   │       └── factures_commerciales
+│   ├── processed
+│   └── raw
+│       ├── Chap_30.csv
+│       ├── Chap_84.csv
+│       └── Chap_85.csv
+├── database
+│   ├── migrations
+│   ├── models
+│   └── schemas
+├── docker-compose.ocr.yml
+├── docker-compose.yml
+├── Dockerfile
+├── docs
+│   ├── API_REFERENCE.md
+│   ├── ARCHITECTURE.md
+│   ├── DATA_DICTIONARY.md
+│   ├── DOCUMENT_TYPES.md
+│   ├── MLOPS.md
+│   ├── OCR_GUIDE.md
+│   ├── README.md
+│   └── RULES_REFERENCE.md
+├── dvc.yaml
+├── inspectia_structure.txt
+├── Makefile
+├── mlflow.yaml
+├── models
+│   ├── chap30
+│   ├── chap84
+│   └── chap85
+├── notebooks
+│   ├── 01_exploration.ipynb
+│   ├── 02_feature_analysis.ipynb
+│   ├── 03_model_benchmarks.ipynb
+│   ├── 04_ocr_analysis.ipynb
+│   └── 05_document_quality.ipynb
+├── pyproject.toml
+├── requirements-dev.txt
+├── requirements-ml.txt
+├── requirements-ocr.txt
+├── requirements.txt
+├── scripts
+│   ├── run_ocr_processing.sh
+│   ├── run_predict.sh
+│   ├── run_preprocess.sh
+│   ├── run_train.sh
+│   ├── serve_api.sh
+│   └── setup_ocr_engines.sh
+├── src
+│   ├── chapters
+│   │   ├── chap30
+│   │   │   ├── business_rules.py
+│   │   │   ├── ml_model.py
+│   │   │   ├── ocr_nlp.py
+│   │   │   └── preprocess.py
+│   │   ├── chap84
+│   │   │   ├── business_rules.py
+│   │   │   ├── ml_model.py
+│   │   │   ├── ocr_nlp.py
+│   │   │   └── preprocess.py
+│   │   └── chap85
+│   │       ├── business_rules.py
+│   │       ├── ml_model.py
+│   │       ├── ocr_nlp.py
+│   │       └── preprocess.py
+│   ├── cli.py
+│   ├── main.py
+│   ├── pipeline_runner.py
+│   ├── services
+│   │   ├── api.py
+│   │   └── schemas.py
+│   └── shared
+│       ├── db_utils.py
+│       ├── io_utils.py
+│       ├── logging_utils.py
+│       ├── nlp_utils.py
+│       ├── ocr_utils.py
+│       ├── reinforcement_learning.py
+│       └── scoring_utils.py
+├── structure_complete.txt
+├── structure.txt
+└── tests
+    ├── test_api.py
+    ├── test_business_rules.py
+    ├── test_document_processors.py
+    ├── test_ml_model.py
+    ├── test_ocr_engines.py
+    └── test_preprocess.py
+
+39 directories, 78 files

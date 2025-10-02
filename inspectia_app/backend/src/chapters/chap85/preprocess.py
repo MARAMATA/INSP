@@ -1,0 +1,335 @@
+#!/usr/bin/env python3
+"""
+Preprocessing Chapitre 85 - Appareils électriques et électroniques
+Basé sur le preprocessing des chapitres 30 et 84 avec règles de fraude spécifiques au chapitre 85
+"""
+
+import pandas as pd
+import numpy as np
+import logging
+from pathlib import Path
+import sys
+
+# Ajouter le chemin pour importer advanced_fraud_detection
+sys.path.append(str(Path(__file__).parent.parent.parent))
+from utils.advanced_fraud_detection import AdvancedFraudDetection
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+class Chap85PreprocessorComprehensive:
+    """Preprocessor COMPLET pour le Chapitre 85 avec FRAUD_FLAG basé sur TOUTES les règles métiers douanières"""
+    
+    def __init__(self):
+        backend_root = Path(__file__).resolve().parents[3]
+        self.backend_root = backend_root
+        self.raw_data_path = backend_root / "data/raw/CHAPITRE_85.csv"
+        self.processed_data_path = backend_root / "data/processed/CHAP85_PROCESSED_ADVANCED.csv"
+        
+        # Colonnes pour créer DECLARATION_ID
+        self.declaration_id_cols = ['ANNEE', 'BUREAU', 'NUMERO_DECLARATION']
+        
+        # Initialiser le détecteur de fraude avancé
+        self.fraud_detector = AdvancedFraudDetection()
+        
+        logger.info("✅ Preprocessor COMPLET initialisé avec toutes les règles métiers douanières")
+
+    def load_data(self):
+        """Charger les données brutes"""
+        logger.info("📊 Chargement des données brutes...")
+        df = pd.read_csv(self.raw_data_path)
+        logger.info(f"✅ Données chargées: {df.shape}")
+        return df
+    
+    def clean_data(self, df):
+        """Nettoyage des données optimisé"""
+        logger.info("🧹 Nettoyage des données...")
+        
+        # Créer DECLARATION_ID
+        df['DECLARATION_ID'] = df[self.declaration_id_cols].astype(str).agg('/'.join, axis=1)
+        logger.info(f"   DECLARATION_ID créé")
+        
+        # Gestion des valeurs manquantes
+        df['VALEUR_DOUANE'] = df['VALEUR_DOUANE'].fillna(df['VALEUR_CAF'])
+        df['PAYS_PROVENANCE'] = df['PAYS_PROVENANCE'].fillna(df['PAYS_ORIGINE'])
+        df['NUMERO_DPI'] = df['NUMERO_DPI'].fillna('SANS_DPI')
+        
+        # Créer des features de base
+        df['CODE_PRODUIT_STR'] = df['CODE_PRODUIT'].astype(str)
+        df['PAYS_ORIGINE_STR'] = df['PAYS_ORIGINE'].astype(str)
+        df['PAYS_PROVENANCE_STR'] = df['PAYS_PROVENANCE'].astype(str)
+        
+        # Utiliser toutes les colonnes importantes
+        df['NUMERO_ARTICLE_STR'] = df['NUMERO_ARTICLE'].astype(str)
+        df['PRECISION_UEMOA_STR'] = df['PRECISION_UEMOA'].astype(str)
+        df['DATE_DECLARATION_STR'] = df['DATE_DECLARATION'].astype(str)
+        
+        # Garder aussi les colonnes originales
+        df['PRECISION_UEMOA'] = df['PRECISION_UEMOA'].astype(int)
+        df['NUMERO_ARTICLE'] = df['NUMERO_ARTICLE'].astype(int)
+        
+        # Calculer la valeur unitaire par kg
+        df['VALEUR_UNITAIRE_KG'] = df['VALEUR_CAF'] / df['POIDS_NET'].replace(0, 1)
+        
+        # Calculer le taux de droits
+        df['TAUX_DROITS_PERCENT'] = (df['MONTANT_LIQUIDATION'] / df['VALEUR_CAF'].replace(0, 1)) * 100
+        
+        # Calculer le ratio valeur douane/CAF
+        df['RATIO_DOUANE_CAF'] = df['VALEUR_DOUANE'] / df['VALEUR_CAF'].replace(0, 1)
+        
+        logger.info(f"✅ Données nettoyées: {df.shape}")
+        return df
+
+    def aggregate_data(self, df):
+        """Agrégation par DECLARATION_ID"""
+        logger.info("📊 Agrégation par DECLARATION_ID...")
+        
+        # Colonnes numériques à agréger
+        numeric_cols = [
+            'VALEUR_CAF', 'VALEUR_DOUANE', 'MONTANT_LIQUIDATION', 'POIDS_NET',
+            'VALEUR_UNITAIRE_KG', 'TAUX_DROITS_PERCENT', 'RATIO_DOUANE_CAF'
+        ]
+        
+        # Colonnes catégorielles à agréger
+        categorical_cols = [
+            'CODE_PRODUIT_STR', 'PAYS_ORIGINE_STR', 'PAYS_PROVENANCE_STR',
+            'NUMERO_ARTICLE_STR', 'PRECISION_UEMOA_STR', 'DATE_DECLARATION_STR',
+            'BUREAU', 'REGIME_FISCAL', 'NUMERO_DPI', 'PRECISION_UEMOA', 'NUMERO_ARTICLE'
+        ]
+        
+        # Dictionnaire d'agrégation
+        agg_dict = {}
+        
+        # Agrégation numérique (somme)
+        for col in numeric_cols:
+            if col in df.columns:
+                agg_dict[col] = 'sum'
+        
+        # Agrégation catégorielle (première valeur)
+        for col in categorical_cols:
+            if col in df.columns:
+                agg_dict[col] = 'first'
+        
+        # Agrégation
+        df_agg = df.groupby('DECLARATION_ID').agg(agg_dict).reset_index()
+        
+        # Recalculer VALEUR_UNITAIRE_KG après agrégation
+        if 'VALEUR_CAF' in df_agg.columns and 'POIDS_NET' in df_agg.columns:
+            df_agg['VALEUR_UNITAIRE_KG'] = df_agg['VALEUR_CAF'] / df_agg['POIDS_NET'].replace(0, 1)
+        
+        logger.info(f"✅ Données agrégées: {df.shape[0]} → {df_agg.shape[0]} déclarations")
+        return df_agg
+
+    def create_advanced_fraud_flag(self, df):
+        """Créer un FRAUD_FLAG basé sur les techniques avancées de détection de fraude"""
+        logger.info("🎯 Création du FRAUD_FLAG avec techniques avancées...")
+        
+        # Utiliser le détecteur de fraude avancé
+        df = self.fraud_detector.run_complete_analysis(df)
+        
+        # Ajouter des règles spécifiques au chapitre 85 - APPAREILS ÉLECTRIQUES ET ÉLECTRONIQUES
+        logger.info("📋 Application des règles spécifiques Chapitre 85 - APPAREILS ÉLECTRIQUES ET ÉLECTRONIQUES...")
+        
+        # 1. DÉTECTION GLISSEMENT TARIFAIRE - Appareils électroniques classés comme électriques
+        # Règle principale : appareils électroniques classés comme électriques simples
+        mask_electroniques = df['CODE_PRODUIT_STR'].str.startswith('85')
+        
+        # Caractéristiques des appareils électroniques : valeur unitaire très élevée, poids faible
+        # Seuil très élevé pour détecter les appareils électroniques
+        seuil_electronique = df['VALEUR_UNITAIRE_KG'].quantile(0.98)
+        mask_valeur_electronique = df['VALEUR_UNITAIRE_KG'] > seuil_electronique
+        
+        # Poids faible typique des appareils électroniques
+        seuil_poids_electronique = df['POIDS_NET'].quantile(0.20)
+        mask_poids_electronique = df['POIDS_NET'] < seuil_poids_electronique
+        
+        # Détecter les appareils électroniques mal classés
+        mask_electroniques_mal_classes = mask_electroniques & mask_valeur_electronique & mask_poids_electronique
+        df.loc[mask_electroniques_mal_classes, 'FRAUD_FLAG'] = 1
+        logger.info(f"   GLISSEMENT TARIFAIRE - Appareils électroniques mal classés: {mask_electroniques_mal_classes.sum()} cas")
+        
+        # 2. DÉTECTION GLISSEMENT TARIFAIRE - Téléphones et smartphones
+        # Codes de téléphones classés comme appareils électriques simples
+        codes_telephones = ['8517', '8525', '8526', '8527', '8528', '8529']
+        mask_codes_telephones = df['CODE_PRODUIT_STR'].str.startswith(tuple(codes_telephones))
+        
+        # Valeur unitaire très élevée (téléphones/smartphones)
+        seuil_telephone = df['VALEUR_UNITAIRE_KG'].quantile(0.99)
+        mask_telephone_luxe = df['VALEUR_UNITAIRE_KG'] > seuil_telephone
+        df.loc[mask_codes_telephones & mask_telephone_luxe, 'FRAUD_FLAG'] = 1
+        logger.info(f"   GLISSEMENT TARIFAIRE - Téléphones/smartphones mal classés: {(mask_codes_telephones & mask_telephone_luxe).sum()} cas")
+        
+        # 3. DÉTECTION GLISSEMENT TARIFAIRE - Pays d'origine électronique
+        # Pays spécialisés dans l'électronique classés comme électriques simples
+        pays_electroniques = ['CN', 'KR', 'JP', 'TW', 'SG', 'MY', 'TH']  # Pays producteurs d'électronique
+        mask_pays_electroniques = df['PAYS_ORIGINE_STR'].isin(pays_electroniques)
+        # Valeur unitaire élevée + code électronique = glissement suspect
+        seuil_glissement = df['VALEUR_UNITAIRE_KG'].quantile(0.95)
+        mask_glissement_suspect = df['VALEUR_UNITAIRE_KG'] > seuil_glissement
+        df.loc[mask_pays_electroniques & mask_glissement_suspect & mask_electroniques, 'FRAUD_FLAG'] = 1
+        logger.info(f"   GLISSEMENT TARIFAIRE - Pays électronique + code suspect: {(mask_pays_electroniques & mask_glissement_suspect & mask_electroniques).sum()} cas")
+        
+        # 4. DÉTECTION GLISSEMENT TARIFAIRE - Volumes suspects
+        # Appareils électroniques en gros volumes avec codes suspects
+        seuil_volume_suspect = df['VALEUR_CAF'].quantile(0.98)
+        mask_volume_suspect = df['VALEUR_CAF'] > seuil_volume_suspect
+        df.loc[mask_electroniques & mask_volume_suspect, 'FRAUD_FLAG'] = 1
+        logger.info(f"   GLISSEMENT TARIFAIRE - Volumes suspects: {(mask_electroniques & mask_volume_suspect).sum()} cas")
+        
+        # 5. DÉTECTION GLISSEMENT TARIFAIRE - Ratio poids/valeur suspect
+        # Appareils électroniques : poids très faible, valeur très élevée
+        df['RATIO_POIDS_VALEUR'] = df['POIDS_NET'] / df['VALEUR_CAF'].replace(0, 1)
+        seuil_ratio_suspect = df['RATIO_POIDS_VALEUR'].quantile(0.01)  # Très faible ratio
+        mask_ratio_suspect = df['RATIO_POIDS_VALEUR'] < seuil_ratio_suspect
+        df.loc[mask_electroniques & mask_ratio_suspect, 'FRAUD_FLAG'] = 1
+        logger.info(f"   GLISSEMENT TARIFAIRE - Ratio poids/valeur suspect: {(mask_electroniques & mask_ratio_suspect).sum()} cas")
+        
+        # Statistiques finales
+        fraud_count = df['FRAUD_FLAG'].sum()
+        fraud_rate = fraud_count / len(df) * 100
+        logger.info(f"✅ FRAUD_FLAG AVANCÉ: {fraud_count} fraudes ({fraud_rate:.1f}%)")
+        
+        return df
+
+    def create_business_features(self, df):
+        """Créer des features business optimisées - FOCUS GLISSEMENT TARIFAIRE"""
+        logger.info("📋 Création des features business optimisées...")
+        
+        # 1. FEATURES GLISSEMENT TARIFAIRE (les plus importantes)
+        # Détection appareils électroniques mal classés
+        df['BUSINESS_GLISSEMENT_ELECTRONIQUE'] = (
+            (df['CODE_PRODUIT_STR'].str.startswith('85')) & 
+            (df['VALEUR_UNITAIRE_KG'] > df['VALEUR_UNITAIRE_KG'].quantile(0.98)) &
+            (df['POIDS_NET'] < df['POIDS_NET'].quantile(0.20))
+        ).astype(int)
+        
+        # Pays électronique + code suspect
+        df['BUSINESS_GLISSEMENT_PAYS_ELECTRONIQUES'] = (
+            df['PAYS_ORIGINE_STR'].isin(['CN', 'KR', 'JP', 'TW', 'SG', 'MY', 'TH']) &
+            df['CODE_PRODUIT_STR'].str.startswith('85') &
+            (df['VALEUR_UNITAIRE_KG'] > df['VALEUR_UNITAIRE_KG'].quantile(0.95))
+        ).astype(int)
+        
+        # Ratio poids/valeur suspect (électronique)
+        df['BUSINESS_GLISSEMENT_RATIO_SUSPECT'] = (
+            (df['RATIO_POIDS_VALEUR'] < df['RATIO_POIDS_VALEUR'].quantile(0.01)) &
+            df['CODE_PRODUIT_STR'].str.startswith('85')
+        ).astype(int)
+        
+        # 2. FEATURES RISQUE PAYS (contrefaçon)
+        high_risk_countries = ['CN', 'IN', 'PK', 'BD', 'LK']
+        df['BUSINESS_RISK_PAYS_HIGH'] = df['PAYS_ORIGINE_STR'].isin(high_risk_countries).astype(int)
+        df['BUSINESS_ORIGINE_DIFF_PROVENANCE'] = (df['PAYS_ORIGINE_STR'] != df['PAYS_PROVENANCE_STR']).astype(int)
+        
+        # 3. FEATURES RÉGIME (détournement)
+        df['BUSINESS_REGIME_PREFERENTIEL'] = df['REGIME_FISCAL'].isin([10, 20, 30, 40]).astype(int)
+        df['BUSINESS_REGIME_NORMAL'] = (df['REGIME_FISCAL'] == 0).astype(int)
+        
+        # 4. FEATURES VALEUR (volumes suspects)
+        df['BUSINESS_VALEUR_ELEVEE'] = (df['VALEUR_CAF'] > df['VALEUR_CAF'].quantile(0.9)).astype(int)
+        df['BUSINESS_VALEUR_EXCEPTIONNELLE'] = (df['VALEUR_CAF'] > df['VALEUR_CAF'].quantile(0.95)).astype(int)
+        
+        # 5. FEATURES POIDS
+        df['BUSINESS_POIDS_FAIBLE'] = (df['POIDS_NET'] < df['POIDS_NET'].quantile(0.2)).astype(int)
+        
+        # 6. FEATURES TAUX DE DROITS
+        df['BUSINESS_DROITS_ELEVES'] = (df['TAUX_DROITS_PERCENT'] > 20).astype(int)
+        
+        # 7. FEATURES RATIOS
+        df['BUSINESS_RATIO_LIQUIDATION_CAF'] = df['MONTANT_LIQUIDATION'] / df['VALEUR_CAF'].replace(0, 1)
+        df['BUSINESS_RATIO_DOUANE_CAF'] = df['RATIO_DOUANE_CAF']
+        
+        # 8. FEATURES ÉLECTRONIQUES (légitimes)
+        df['BUSINESS_IS_ELECTRONIQUE'] = df['CODE_PRODUIT_STR'].str.startswith('85').astype(int)
+        df['BUSINESS_IS_TELEPHONE'] = df['CODE_PRODUIT_STR'].str.startswith(('8517', '8525', '8526', '8527', '8528', '8529')).astype(int)
+        df['BUSINESS_IS_PRECISION_UEMOA'] = (df['PRECISION_UEMOA'] == 90).astype(int)
+        
+        # 9. FEATURES ARTICLES ET DPI
+        df['BUSINESS_ARTICLES_MULTIPLES'] = (df['NUMERO_ARTICLE'] > 1).astype(int)
+        df['BUSINESS_AVEC_DPI'] = (df['NUMERO_DPI'] != 'SANS_DPI').astype(int)
+        
+        logger.info("✅ Features business créées (18 features principales)")
+        return df
+
+    def handle_missing_values(self, df):
+        """Gestion des valeurs manquantes optimisée"""
+        logger.info("🔧 Gestion des valeurs manquantes...")
+        
+        # Remplacer les infinis par NaN
+        df = df.replace([np.inf, -np.inf], np.nan)
+        
+        # Colonnes numériques
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        for col in numeric_cols:
+            if df[col].isna().any():
+                df[col] = df[col].fillna(df[col].median())
+        
+        # Colonnes catégorielles
+        categorical_cols = df.select_dtypes(include=['object']).columns
+        for col in categorical_cols:
+            if df[col].isna().any():
+                mode_val = df[col].mode()
+                if not mode_val.empty:
+                    df[col] = df[col].fillna(mode_val[0])
+                else:
+                    df[col] = df[col].fillna('UNKNOWN')
+        
+        logger.info("✅ Valeurs manquantes traitées")
+        return df
+
+    def run_preprocessing(self):
+        """Pipeline complet de preprocessing optimisé"""
+        logger.info("🚀 DÉMARRAGE DU PREPROCESSING AVANCÉ CHAPITRE 85")
+        logger.info("=" * 60)
+        
+        try:
+            # 1. Charger les données
+            df = self.load_data()
+            
+            # 2. Nettoyer les données
+            df = self.clean_data(df)
+            
+            # 3. Agréger par DECLARATION_ID
+            df = self.aggregate_data(df)
+            
+            # 4. Gérer les valeurs manquantes
+            df = self.handle_missing_values(df)
+            
+            # 5. Créer le FRAUD_FLAG avec techniques avancées
+            df = self.create_advanced_fraud_flag(df)
+            
+            # 6. Créer les features business
+            df = self.create_business_features(df)
+            
+            # 7. Nettoyage final
+            df = df.dropna(subset=['FRAUD_FLAG'])
+            
+            # 8. Sauvegarder
+            self.processed_data_path.parent.mkdir(parents=True, exist_ok=True)
+            df.to_csv(self.processed_data_path, index=False)
+            
+            # 9. Rapport final
+            logger.info("=" * 60)
+            logger.info("✅ PREPROCESSING CHAPITRE 85 TERMINÉ AVEC SUCCÈS")
+            logger.info(f"📊 Données finales: {df.shape}")
+            logger.info(f"🎯 Taux de fraude: {df['FRAUD_FLAG'].mean()*100:.1f}%")
+            logger.info(f"📁 Fichier sauvegardé: {self.processed_data_path}")
+            logger.info("=" * 60)
+            
+            return df
+            
+        except Exception as e:
+            logger.error(f"❌ Erreur lors du preprocessing: {e}")
+            raise
+
+def main():
+    """Fonction principale"""
+    try:
+        preprocessor = Chap85PreprocessorComprehensive()
+        preprocessor.run_preprocessing()
+    except Exception as e:
+        logger.error(f"❌ Erreur dans main: {e}")
+        raise
+
+if __name__ == "__main__":
+    main()

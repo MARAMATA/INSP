@@ -1,0 +1,20 @@
+database:
+  driver: "postgresql+asyncpg"
+  host: "localhost"
+  port: 5432
+  username: "maramata"
+  password: "maramata"
+  database: "INSPECT_IA"
+  pool_size: 15
+  max_overflow: 25
+  pool_timeout: 30
+  pool_recycle: 1800
+  ssl_mode: "prefer"
+  # Configuration optimisée pour le nouveau système ML-RL avancé
+  echo: false
+  echo_pool: false
+  # Configuration pour les nouvelles features
+  connect_args:
+    server_settings:
+      application_name: "INSPECT_IA_ML_RL_SYSTEM"
+      timezone: "UTC"

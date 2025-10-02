@@ -1,0 +1,36 @@
+
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "inspectia_app"
+version = "1.0.0"
+description = "Application de détection de fraude douanière avec RL"
+authors = [{name = "Inspectia Team"}]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "pandas",
+    "numpy", 
+    "scikit-learn",
+    "joblib",
+    "lightgbm",
+    "xgboost",
+    "catboost",
+    "streamlit",
+    "plotly",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "black",
+    "flake8",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"

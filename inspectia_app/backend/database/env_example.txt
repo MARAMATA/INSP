@@ -1,0 +1,59 @@
+# Configuration de base de données PostgreSQL pour INSPECT_IA
+# Système de détection de fraude douanière avec ML-RL avancé
+# Copiez ce fichier vers .env dans la racine du projet et modifiez les valeurs
+
+DATABASE_URL=postgresql://maramata:maramata@localhost:5432/INSPECT_IA
+SQLALCHEMY_DATABASE_URL=postgresql://maramata:maramata@localhost:5432/INSPECT_IA
+ALEMBIC_DATABASE_URL=postgresql://maramata:maramata@localhost:5432/INSPECT_IA
+
+# Pool de connexions
+DB_POOL_SIZE=10
+DB_MAX_OVERFLOW=20
+DB_POOL_TIMEOUT=30
+DB_POOL_RECYCLE=3600
+
+# Configuration de logging
+DB_ECHO=false
+
+# Configuration de l'application
+APP_NAME=INSPECT_IA
+APP_VERSION=2.0.0
+DEBUG=false
+ENVIRONMENT=development
+
+# Configuration des chapitres
+CHAPTERS=chap30,chap84,chap85
+
+# Configuration des chemins
+ML_MODELS_PATH=backend/models
+ML_RESULTS_PATH=backend/results
+OCR_INPUT_PATH=backend/data/ocr/input
+OCR_PROCESSED_PATH=backend/data/ocr/processed
+RL_DATA_PATH=backend/data/rl
+
+# Configuration des seuils optimaux (basés sur les meilleurs modèles)
+DEFAULT_FRAUD_THRESHOLD=0.5
+DEFAULT_CONFORME_THRESHOLD=0.2
+DEFAULT_FRAUDE_THRESHOLD=0.8
+# Seuils optimaux par chapitre
+CHAP30_OPTIMAL_THRESHOLD=0.23
+CHAP84_OPTIMAL_THRESHOLD=0.22
+CHAP85_OPTIMAL_THRESHOLD=0.22
+
+# Configuration des logs
+LOG_LEVEL=INFO
+LOG_FILE=backend/logs/inspectia.log
+
+# Configuration API
+API_HOST=0.0.0.0
+API_PORT=8000
+
+# Configuration de sécurité (À CHANGER EN PRODUCTION)
+SECRET_KEY=your-secret-key-here
+JWT_SECRET_KEY=your-jwt-secret-key-here
+
+# INSTRUCTIONS:
+# 1. Copiez ce fichier vers .env dans la racine du projet
+# 2. Modifiez les valeurs selon votre environnement
+# 3. En production, changez les mots de passe et clés secrètes
+# 4. Le fichier .env ne doit JAMAIS être commité dans Git

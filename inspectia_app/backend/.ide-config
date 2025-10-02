@@ -1,0 +1,3 @@
+# Configuration IDE pour InspectIA
+PYTHONPATH=/Users/macbook/Desktop/inspectia_app/backend/src
+PYTHON_EXECUTABLE=/Users/macbook/Desktop/inspectia_app/backend/venv/bin/python

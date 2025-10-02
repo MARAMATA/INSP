@@ -1,0 +1,22 @@
+# Configuration de base pour le système
+# Fichier minimal pour éviter les erreurs d'import
+
+# Configuration générale
+app_name: "Inspectia"
+version: "1.0.0"
+
+# Configuration des chemins
+data_root: "backend/data"
+models_root: "backend/models"
+
+# Configuration des chapitres
+chapters:
+  - "chap30"
+  - "chap84" 
+  - "chap85"
+
+# Configuration par défaut
+defaults:
+  test_size: 0.2
+  random_state: 42
+  cv_folds: 5
