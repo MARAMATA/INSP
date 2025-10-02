@@ -63,7 +63,7 @@ from src.shared.advanced_reinforcement_learning import AdvancedRLManager
 from src.shared.ml_retraining_system import get_retraining_system, trigger_retraining
 
 # Import de la base de données
-from database.backend_integration import get_inspectia_db
+from database.database import get_database_session_context
 
 router = APIRouter(prefix="/predict", tags=["predict"])
 
@@ -112,7 +112,7 @@ async def save_declaration_to_postgresql(declaration_id: str, chapter_id: str, d
     """Sauvegarde une déclaration en PostgreSQL avec la nouvelle classe InspectIADatabase"""
     try:
         # Utiliser la nouvelle classe InspectIADatabase
-        inspectia_db = get_inspectia_db()
+        inspectia_db = get_database_session_context()
         
         # Nettoyer les données pour JSON
         clean_data = clean_data_for_json(data)
@@ -164,7 +164,7 @@ async def save_prediction_to_postgresql(declaration_id: str, chapter_id: str, pr
     """Sauvegarde une prédiction en PostgreSQL avec la nouvelle classe InspectIADatabase"""
     try:
         # Utiliser la nouvelle classe InspectIADatabase
-        inspectia_db = get_inspectia_db()
+        inspectia_db = get_database_session_context()
         
         # Nettoyer les données pour JSON
         clean_context = clean_data_for_json(prediction_data.get('context', {}))
@@ -267,7 +267,7 @@ async def predict(chapter: str, file: UploadFile = File(...)):
             raise HTTPException(status_code=500, detail=result["error"])
         
         # Traiter les données extraites avec le pipeline OCR/ML/RL
-        extracted_data = result.get("extracted_data", {})
+        extracted_data = result.get("metadata", {}).get("extracted_data", {})
         if not extracted_data:
             raise HTTPException(status_code=400, detail="Aucune donnée extraite du fichier")
         
@@ -1146,7 +1146,7 @@ async def add_general_feedback(chapter: str, feedback_data: Dict[str, Any] = Bod
                 INSERT INTO feedback_history (
                     feedback_id, chapter_id, declaration_id, inspector_id,
                     inspector_decision, inspector_confidence, predicted_fraud,
-                    predicted_probability, notes, created_at
+                    predicted_probability, feedback_reasoning, created_at
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 feedback_id,
@@ -1157,7 +1157,7 @@ async def add_general_feedback(chapter: str, feedback_data: Dict[str, Any] = Bod
                 feedback["confidence"],
                 feedback_data.get("predicted_fraud", False),  # Valeur par défaut si null
                 feedback_data.get("predicted_probability", 0.5),  # Valeur par défaut si null
-                feedback["notes"],
+                feedback.get("notes", ""),
                 datetime.now()
             ))
             
@@ -2169,7 +2169,7 @@ async def get_declarations(
 ):
     """Récupère la liste des déclarations avec filtres optionnels"""
     try:
-        inspectia_db = get_inspectia_db()
+        inspectia_db = get_database_session_context()
         
         if chapter:
             # Récupérer les déclarations d'un chapitre spécifique
@@ -2214,7 +2214,7 @@ async def get_declarations(
 async def get_declaration_details(declaration_id: str):
     """Récupère les détails d'une déclaration spécifique"""
     try:
-        inspectia_db = get_inspectia_db()
+        inspectia_db = get_database_session_context()
         declaration = inspectia_db.get_declaration(declaration_id)
         
         if not declaration:
@@ -2296,7 +2296,7 @@ async def postgresql_upload_declaration(
                 raise HTTPException(status_code=500, detail=result["error"])
             
             # Traiter les données extraites avec le pipeline OCR/ML/RL
-            extracted_data = result.get("extracted_data", {})
+            extracted_data = result.get("metadata", {}).get("extracted_data", {})
             if not extracted_data:
                 raise HTTPException(status_code=400, detail="Aucune donnée extraite du fichier")
             

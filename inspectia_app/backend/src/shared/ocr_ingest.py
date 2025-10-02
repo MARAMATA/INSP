@@ -261,10 +261,15 @@ VALIDATION_PATTERNS = {
     "regime_complet": r"^[A-Z]\d+$",  # Format: C1, S110, etc.
     "date_arrivee": r"^\d{2}/\d{2}/\d{4}$",  # Format: DD/MM/YYYY
     "valeur_caf": r"^\d+(\.\d+)?$",  # Nombre entier ou décimal
+    "VALEUR_CAF": r"^\d+(\.\d+)?$",  # Nombre entier ou décimal
     "poids_net": r"^\d+(\.\d+)?$",  # Nombre entier ou décimal
+    "POIDS_NET_KG": r"^\d+(\.\d+)?$",  # Nombre entier ou décimal
     "nombre_colis": r"^\d+$",  # Nombre entier
+    "NOMBRE_COLIS": r"^\d+$",  # Nombre entier
     "quantite_complement": r"^\d+$",  # Nombre entier
-    "taux_droits_percent": r"^\d+(\.\d+)?$"  # Nombre entier ou décimal
+    "QUANTITE_COMPLEMENT": r"^\d+$",  # Nombre entier
+    "taux_droits_percent": r"^\d+(\.\d+)?$",  # Nombre entier ou décimal
+    "DECLARATION_ID": r".*"  # Accepter n'importe quel DECLARATION_ID
 }
 
 # -------------------------------
@@ -607,11 +612,16 @@ def aggregate_csv_by_declaration(df: pd.DataFrame) -> List[Dict[str, Any]]:
         for col in categorical_cols:
             agg_dict[col] = 'first'
         
-        # Agrégation par DECLARATION_ID
-        df_agg = df.groupby('DECLARATION_ID').agg(agg_dict).reset_index()
-        
-        # Convertir en liste de dictionnaires
-        declarations = df_agg.to_dict('records')
+        # Vérifier si on a des colonnes à agréger
+        if not agg_dict:
+            # Pas de colonnes numériques/catégorielles, retourner les données telles quelles
+            declarations = df.to_dict('records')
+        else:
+            # Agrégation par DECLARATION_ID
+            df_agg = df.groupby('DECLARATION_ID').agg(agg_dict).reset_index()
+            
+            # Convertir en liste de dictionnaires
+            declarations = df_agg.to_dict('records')
         
         # CORRECTION: Mapper les clés du CSV vers les clés attendues par le système
         for decl in declarations:
@@ -717,12 +727,12 @@ def normalize_ocr_data(data: Dict[str, Any]) -> Dict[str, Any]:
             value = value.strip()
         
         # Conversion spécifique par type de champ
-        if key in ["valeur_caf", "valeur_fob", "valeur_douane", "poids_net", "poids_brut", "VALEUR_CAF", "POIDS_NET_KG"]:
+        if key in ["valeur_caf", "valeur_fob", "valeur_douane", "poids_net", "poids_brut", "VALEUR_CAF", "POIDS_NET_KG", "valeur_caf"]:
             try:
                 normalized[key] = float(str(value).replace(",", "."))
             except:
                 normalized[key] = 0.0
-        elif key in ["nombre_colis", "quantite_complement", "quantite_mercuriale", "NOMBRE_COLIS", "QUANTITE_COMPLEMENT"]:
+        elif key in ["nombre_colis", "quantite_complement", "quantite_mercuriale", "NOMBRE_COLIS", "QUANTITE_COMPLEMENT", "nombre_colis"]:
             try:
                 normalized[key] = int(str(value))
             except:
@@ -1104,7 +1114,7 @@ def process_declaration_file(file_path: str, chapter: str = None) -> Dict[str, A
         metadata = {
             "file_path": str(file_path),
             "chapter": chapter,
-            "extracted_data": validated_data,
+            "extracted_data": advanced_context,
             "source_type": source_type,
             "total_declarations": total_declarations,
             "processing_timestamp": datetime.now().isoformat()
