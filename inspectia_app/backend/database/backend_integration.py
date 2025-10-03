@@ -151,7 +151,7 @@ def test_ocr_integration() -> bool:
         except ImportError as e:
             logger.warning(f"⚠️ Modules OCR: import échoué - {e}")
             return False
-        
+
         # Test de création du pipeline OCR
         try:
             ocr_pipeline = AdvancedOCRPipeline()

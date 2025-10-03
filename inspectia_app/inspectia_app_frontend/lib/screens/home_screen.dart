@@ -3,8 +3,20 @@ import '../utils/constants.dart';
 import '../services/user_session_service.dart';
 import '../models/user_profile.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Recharger le profil utilisateur pour s'assurer d'avoir les dernières permissions
+    UserSessionService.reloadUserProfile();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,6 +24,21 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(AppText.appName),
         actions: [
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: () async {
+              // Recharger le profil utilisateur
+              await UserSessionService.reloadUserProfile();
+              setState(() {}); // Forcer le rechargement de l'interface
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Permissions mises à jour'),
+                  backgroundColor: AppColors.successGreen,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: Icon(Icons.logout),
             onPressed: () async {

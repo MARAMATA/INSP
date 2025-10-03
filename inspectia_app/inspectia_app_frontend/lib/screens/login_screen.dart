@@ -93,8 +93,9 @@ class _LoginScreenState extends State<LoginScreen> {
       });
 
       if (success) {
-        // Navigation vers l'écran principal
-        Navigator.pushReplacementNamed(context, '/home');
+        // Navigation vers la route par défaut selon le rôle
+        final defaultRoute = UserSessionService.defaultRoute;
+        Navigator.pushReplacementNamed(context, defaultRoute);
       } else {
         // Afficher un message d'erreur
         ScaffoldMessenger.of(context).showSnackBar(

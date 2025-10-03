@@ -63,7 +63,7 @@ from src.shared.advanced_reinforcement_learning import AdvancedRLManager
 from src.shared.ml_retraining_system import get_retraining_system, trigger_retraining
 
 # Import de la base de données
-from database.database import get_database_session_context
+from database.database import get_database_session_context, execute_postgresql_query
 
 router = APIRouter(prefix="/predict", tags=["predict"])
 
@@ -2169,33 +2169,52 @@ async def get_declarations(
 ):
     """Récupère la liste des déclarations avec filtres optionnels"""
     try:
-        inspectia_db = get_database_session_context()
-        
+        # Construire la requête SQL
         if chapter:
-            # Récupérer les déclarations d'un chapitre spécifique
-            declarations = inspectia_db.get_declarations_by_chapter(chapter, limit)
+            query = """
+                SELECT declaration_id, chapter_id, file_name, file_type, source_type,
+                       poids_net_kg, valeur_caf, code_sh_complet, pays_origine_str,
+                       pays_provenance_str, extraction_status, validation_status,
+                       created_at, updated_at
+                FROM declarations 
+                WHERE chapter_id = %s
+                ORDER BY created_at DESC
+                LIMIT %s
+            """
+            params = [chapter, limit]
         else:
-            # Récupérer toutes les déclarations récentes
-            declarations = inspectia_db.get_recent_declarations(limit)
+            query = """
+                SELECT declaration_id, chapter_id, file_name, file_type, source_type,
+                       poids_net_kg, valeur_caf, code_sh_complet, pays_origine_str,
+                       pays_provenance_str, extraction_status, validation_status,
+                       created_at, updated_at
+                FROM declarations 
+                ORDER BY created_at DESC
+                LIMIT %s
+            """
+            params = [limit]
+        
+        # Exécuter la requête
+        declarations = execute_postgresql_query(query, params)
         
         # Convertir en format JSON
         declarations_data = []
         for decl in declarations:
             declarations_data.append({
-                "declaration_id": decl.declaration_id,
-                "chapter_id": decl.chapter_id,
-                "file_name": decl.file_name,
-                "file_type": decl.file_type,
-                "source_type": decl.source_type,
-                "poids_net_kg": float(decl.poids_net_kg) if decl.poids_net_kg else None,
-                "valeur_caf": float(decl.valeur_caf) if decl.valeur_caf else None,
-                "code_sh_complet": decl.code_sh_complet,
-                "pays_origine_str": decl.pays_origine_str,
-                "pays_provenance_str": decl.pays_provenance_str,
-                "extraction_status": decl.extraction_status,
-                "validation_status": decl.validation_status,
-                "created_at": decl.created_at.isoformat() if decl.created_at else None,
-                "updated_at": decl.updated_at.isoformat() if decl.updated_at else None,
+                "declaration_id": decl[0],
+                "chapter_id": decl[1],
+                "file_name": decl[2],
+                "file_type": decl[3],
+                "source_type": decl[4],
+                "poids_net_kg": float(decl[5]) if decl[5] else None,
+                "valeur_caf": float(decl[6]) if decl[6] else None,
+                "code_sh_complet": decl[7],
+                "pays_origine_str": decl[8],
+                "pays_provenance_str": decl[9],
+                "extraction_status": decl[10],
+                "validation_status": decl[11],
+                "created_at": decl[12].isoformat() if decl[12] else None,
+                "updated_at": decl[13].isoformat() if decl[13] else None,
             })
         
         return {

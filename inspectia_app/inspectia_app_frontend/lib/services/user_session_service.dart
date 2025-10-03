@@ -125,6 +125,19 @@ class UserSessionService {
     return _currentUser!.accessiblePages.contains(route);
   }
 
+  /// Retourne la route de redirection par défaut selon le rôle
+  static String get defaultRoute {
+    if (_currentUser == null) return '/login';
+
+    switch (_currentUser!.role) {
+      case UserRole.chefService:
+        return '/dashboard';
+      case UserRole.inspecteur:
+      case UserRole.expertML:
+        return '/home';
+    }
+  }
+
   /// Retourne les informations de session
   static Map<String, dynamic> get sessionInfo {
     if (_currentUser == null) {
@@ -143,6 +156,7 @@ class UserSessionService {
       'role': _currentUser!.role.name,
       'permissions': _currentUser!.permissions,
       'accessiblePages': _currentUser!.accessiblePages,
+      'defaultRoute': defaultRoute,
     };
   }
 
@@ -150,5 +164,29 @@ class UserSessionService {
   static Future<void> updateSession(UserProfile user) async {
     _currentUser = user;
     await _saveUserToStorage(user);
+  }
+
+  /// Force le rechargement du profil utilisateur avec les dernières permissions
+  static Future<void> reloadUserProfile() async {
+    if (_currentUser != null) {
+      // Recharger le profil depuis les profils prédéfinis
+      UserProfile profile;
+      switch (_currentUser!.username) {
+        case 'inspecteur':
+          profile = UserProfile.inspecteurProfile;
+          break;
+        case 'expert_ml':
+          profile = UserProfile.expertMLProfile;
+          break;
+        case 'chef_service':
+          profile = UserProfile.chefServiceProfile;
+          break;
+        default:
+          return;
+      }
+
+      _currentUser = profile;
+      await _saveUserToStorage(_currentUser!);
+    }
   }
 }

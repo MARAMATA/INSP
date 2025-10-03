@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/user_session_service.dart';
+import '../models/user_profile.dart';
 import '../utils/constants.dart';
 
 class RouteGuard extends StatelessWidget {
@@ -18,20 +19,49 @@ class RouteGuard extends StatelessWidget {
   Widget build(BuildContext context) {
     // Vérifier si l'utilisateur est connecté
     if (!UserSessionService.isLoggedIn) {
+      print('RouteGuard: Utilisateur non connecté');
       return _buildUnauthorizedScreen(context);
     }
 
+    // Debug: Afficher les informations de la session
+    final currentUser = UserSessionService.currentUser;
+    print('RouteGuard: Utilisateur connecté: ${currentUser?.username}');
+    print('RouteGuard: Rôle: ${currentUser?.role.name}');
+    print('RouteGuard: Route demandée: $route');
+    print(
+      'RouteGuard: Pages accessibles: ${UserSessionService.accessiblePages}',
+    );
+    print(
+      'RouteGuard: Peut accéder à la route: ${UserSessionService.canAccessRoute(route)}',
+    );
+
     // Vérifier si l'utilisateur peut accéder à cette route
     if (!UserSessionService.canAccessRoute(route)) {
+      print('RouteGuard: Accès refusé - route non autorisée');
+
+      // Si c'est un chef de service, rediriger vers le dashboard
+      if (currentUser?.role == UserRole.chefService) {
+        print('RouteGuard: Redirection chef de service vers dashboard');
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.pushReplacementNamed(context, '/dashboard');
+        });
+        return Container(); // Widget vide pendant la redirection
+      }
+
       return _buildForbiddenScreen(context);
     }
 
     // Vérifier la permission spécifique si demandée
     if (requiredPermission != null &&
         !UserSessionService.hasPermission(requiredPermission!)) {
+      print(
+        'RouteGuard: Accès refusé - permission manquante: $requiredPermission',
+      );
+      print('RouteGuard: Permissions disponibles: ${currentUser?.permissions}');
       return _buildForbiddenScreen(context);
     }
 
+    print('RouteGuard: Accès autorisé');
     return child;
   }
 
