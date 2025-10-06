@@ -169,14 +169,14 @@ def setup_chapters_environment():
         chapters_config = {
             'CHAPTERS': 'chap30,chap84,chap85',
             'CHAP30_OPTIMAL_THRESHOLD': '0.23',
-            'CHAP30_BEST_MODEL': 'xgboost',
-            'CHAP30_FEATURES_COUNT': '52',
+            'CHAP30_BEST_MODEL': 'catboost',
+            'CHAP30_FEATURES_COUNT': '43',
             'CHAP84_OPTIMAL_THRESHOLD': '0.22',
             'CHAP84_BEST_MODEL': 'xgboost',
-            'CHAP84_FEATURES_COUNT': '54',
+            'CHAP84_FEATURES_COUNT': '43',
             'CHAP85_OPTIMAL_THRESHOLD': '0.22',
             'CHAP85_BEST_MODEL': 'lightgbm',
-            'CHAP85_FEATURES_COUNT': '54'
+            'CHAP85_FEATURES_COUNT': '43'
         }
         
         for key, value in chapters_config.items():
@@ -279,14 +279,14 @@ API_JWT_SECRET=inspectia-jwt-secret-2024
 # Configuration chapitres
 CHAPTERS=chap30,chap84,chap85
 CHAP30_OPTIMAL_THRESHOLD=0.23
-CHAP30_BEST_MODEL=xgboost
-CHAP30_FEATURES_COUNT=52
+CHAP30_BEST_MODEL=catboost
+CHAP30_FEATURES_COUNT=43
 CHAP84_OPTIMAL_THRESHOLD=0.22
 CHAP84_BEST_MODEL=xgboost
-CHAP84_FEATURES_COUNT=54
+CHAP84_FEATURES_COUNT=43
 CHAP85_OPTIMAL_THRESHOLD=0.22
 CHAP85_BEST_MODEL=lightgbm
-CHAP85_FEATURES_COUNT=54
+CHAP85_FEATURES_COUNT=43
 
 # Configuration ML
 ML_MODELS_PATH=backend/results
@@ -574,14 +574,14 @@ def setup_chapters_environment():
         chapters_config = {
             'CHAPTERS': 'chap30,chap84,chap85',
             'CHAP30_OPTIMAL_THRESHOLD': '0.23',
-            'CHAP30_BEST_MODEL': 'xgboost',
-            'CHAP30_FEATURES_COUNT': '52',
+            'CHAP30_BEST_MODEL': 'catboost',
+            'CHAP30_FEATURES_COUNT': '43',
             'CHAP84_OPTIMAL_THRESHOLD': '0.22',
             'CHAP84_BEST_MODEL': 'xgboost',
-            'CHAP84_FEATURES_COUNT': '54',
+            'CHAP84_FEATURES_COUNT': '43',
             'CHAP85_OPTIMAL_THRESHOLD': '0.22',
             'CHAP85_BEST_MODEL': 'lightgbm',
-            'CHAP85_FEATURES_COUNT': '54'
+            'CHAP85_FEATURES_COUNT': '43'
         }
         
         for key, value in chapters_config.items():
@@ -684,14 +684,14 @@ API_JWT_SECRET=inspectia-jwt-secret-2024
 # Configuration chapitres
 CHAPTERS=chap30,chap84,chap85
 CHAP30_OPTIMAL_THRESHOLD=0.23
-CHAP30_BEST_MODEL=xgboost
-CHAP30_FEATURES_COUNT=52
+CHAP30_BEST_MODEL=catboost
+CHAP30_FEATURES_COUNT=43
 CHAP84_OPTIMAL_THRESHOLD=0.22
 CHAP84_BEST_MODEL=xgboost
-CHAP84_FEATURES_COUNT=54
+CHAP84_FEATURES_COUNT=43
 CHAP85_OPTIMAL_THRESHOLD=0.22
 CHAP85_BEST_MODEL=lightgbm
-CHAP85_FEATURES_COUNT=54
+CHAP85_FEATURES_COUNT=43
 
 # Configuration ML
 ML_MODELS_PATH=backend/results
@@ -979,14 +979,14 @@ def setup_chapters_environment():
         chapters_config = {
             'CHAPTERS': 'chap30,chap84,chap85',
             'CHAP30_OPTIMAL_THRESHOLD': '0.23',
-            'CHAP30_BEST_MODEL': 'xgboost',
-            'CHAP30_FEATURES_COUNT': '52',
+            'CHAP30_BEST_MODEL': 'catboost',
+            'CHAP30_FEATURES_COUNT': '43',
             'CHAP84_OPTIMAL_THRESHOLD': '0.22',
             'CHAP84_BEST_MODEL': 'xgboost',
-            'CHAP84_FEATURES_COUNT': '54',
+            'CHAP84_FEATURES_COUNT': '43',
             'CHAP85_OPTIMAL_THRESHOLD': '0.22',
             'CHAP85_BEST_MODEL': 'lightgbm',
-            'CHAP85_FEATURES_COUNT': '54'
+            'CHAP85_FEATURES_COUNT': '43'
         }
         
         for key, value in chapters_config.items():
@@ -1089,14 +1089,14 @@ API_JWT_SECRET=inspectia-jwt-secret-2024
 # Configuration chapitres
 CHAPTERS=chap30,chap84,chap85
 CHAP30_OPTIMAL_THRESHOLD=0.23
-CHAP30_BEST_MODEL=xgboost
-CHAP30_FEATURES_COUNT=52
+CHAP30_BEST_MODEL=catboost
+CHAP30_FEATURES_COUNT=43
 CHAP84_OPTIMAL_THRESHOLD=0.22
 CHAP84_BEST_MODEL=xgboost
-CHAP84_FEATURES_COUNT=54
+CHAP84_FEATURES_COUNT=43
 CHAP85_OPTIMAL_THRESHOLD=0.22
 CHAP85_BEST_MODEL=lightgbm
-CHAP85_FEATURES_COUNT=54
+CHAP85_FEATURES_COUNT=43
 
 # Configuration ML
 ML_MODELS_PATH=backend/results
@@ -1384,14 +1384,14 @@ def setup_chapters_environment():
         chapters_config = {
             'CHAPTERS': 'chap30,chap84,chap85',
             'CHAP30_OPTIMAL_THRESHOLD': '0.23',
-            'CHAP30_BEST_MODEL': 'xgboost',
-            'CHAP30_FEATURES_COUNT': '52',
+            'CHAP30_BEST_MODEL': 'catboost',
+            'CHAP30_FEATURES_COUNT': '43',
             'CHAP84_OPTIMAL_THRESHOLD': '0.22',
             'CHAP84_BEST_MODEL': 'xgboost',
-            'CHAP84_FEATURES_COUNT': '54',
+            'CHAP84_FEATURES_COUNT': '43',
             'CHAP85_OPTIMAL_THRESHOLD': '0.22',
             'CHAP85_BEST_MODEL': 'lightgbm',
-            'CHAP85_FEATURES_COUNT': '54'
+            'CHAP85_FEATURES_COUNT': '43'
         }
         
         for key, value in chapters_config.items():
@@ -1494,14 +1494,14 @@ API_JWT_SECRET=inspectia-jwt-secret-2024
 # Configuration chapitres
 CHAPTERS=chap30,chap84,chap85
 CHAP30_OPTIMAL_THRESHOLD=0.23
-CHAP30_BEST_MODEL=xgboost
-CHAP30_FEATURES_COUNT=52
+CHAP30_BEST_MODEL=catboost
+CHAP30_FEATURES_COUNT=43
 CHAP84_OPTIMAL_THRESHOLD=0.22
 CHAP84_BEST_MODEL=xgboost
-CHAP84_FEATURES_COUNT=54
+CHAP84_FEATURES_COUNT=43
 CHAP85_OPTIMAL_THRESHOLD=0.22
 CHAP85_BEST_MODEL=lightgbm
-CHAP85_FEATURES_COUNT=54
+CHAP85_FEATURES_COUNT=43
 
 # Configuration ML
 ML_MODELS_PATH=backend/results
@@ -1789,14 +1789,14 @@ def setup_chapters_environment():
         chapters_config = {
             'CHAPTERS': 'chap30,chap84,chap85',
             'CHAP30_OPTIMAL_THRESHOLD': '0.23',
-            'CHAP30_BEST_MODEL': 'xgboost',
-            'CHAP30_FEATURES_COUNT': '52',
+            'CHAP30_BEST_MODEL': 'catboost',
+            'CHAP30_FEATURES_COUNT': '43',
             'CHAP84_OPTIMAL_THRESHOLD': '0.22',
             'CHAP84_BEST_MODEL': 'xgboost',
-            'CHAP84_FEATURES_COUNT': '54',
+            'CHAP84_FEATURES_COUNT': '43',
             'CHAP85_OPTIMAL_THRESHOLD': '0.22',
             'CHAP85_BEST_MODEL': 'lightgbm',
-            'CHAP85_FEATURES_COUNT': '54'
+            'CHAP85_FEATURES_COUNT': '43'
         }
         
         for key, value in chapters_config.items():
@@ -1899,14 +1899,14 @@ API_JWT_SECRET=inspectia-jwt-secret-2024
 # Configuration chapitres
 CHAPTERS=chap30,chap84,chap85
 CHAP30_OPTIMAL_THRESHOLD=0.23
-CHAP30_BEST_MODEL=xgboost
-CHAP30_FEATURES_COUNT=52
+CHAP30_BEST_MODEL=catboost
+CHAP30_FEATURES_COUNT=43
 CHAP84_OPTIMAL_THRESHOLD=0.22
 CHAP84_BEST_MODEL=xgboost
-CHAP84_FEATURES_COUNT=54
+CHAP84_FEATURES_COUNT=43
 CHAP85_OPTIMAL_THRESHOLD=0.22
 CHAP85_BEST_MODEL=lightgbm
-CHAP85_FEATURES_COUNT=54
+CHAP85_FEATURES_COUNT=43
 
 # Configuration ML
 ML_MODELS_PATH=backend/results
@@ -2194,14 +2194,14 @@ def setup_chapters_environment():
         chapters_config = {
             'CHAPTERS': 'chap30,chap84,chap85',
             'CHAP30_OPTIMAL_THRESHOLD': '0.23',
-            'CHAP30_BEST_MODEL': 'xgboost',
-            'CHAP30_FEATURES_COUNT': '52',
+            'CHAP30_BEST_MODEL': 'catboost',
+            'CHAP30_FEATURES_COUNT': '43',
             'CHAP84_OPTIMAL_THRESHOLD': '0.22',
             'CHAP84_BEST_MODEL': 'xgboost',
-            'CHAP84_FEATURES_COUNT': '54',
+            'CHAP84_FEATURES_COUNT': '43',
             'CHAP85_OPTIMAL_THRESHOLD': '0.22',
             'CHAP85_BEST_MODEL': 'lightgbm',
-            'CHAP85_FEATURES_COUNT': '54'
+            'CHAP85_FEATURES_COUNT': '43'
         }
         
         for key, value in chapters_config.items():
@@ -2304,14 +2304,14 @@ API_JWT_SECRET=inspectia-jwt-secret-2024
 # Configuration chapitres
 CHAPTERS=chap30,chap84,chap85
 CHAP30_OPTIMAL_THRESHOLD=0.23
-CHAP30_BEST_MODEL=xgboost
-CHAP30_FEATURES_COUNT=52
+CHAP30_BEST_MODEL=catboost
+CHAP30_FEATURES_COUNT=43
 CHAP84_OPTIMAL_THRESHOLD=0.22
 CHAP84_BEST_MODEL=xgboost
-CHAP84_FEATURES_COUNT=54
+CHAP84_FEATURES_COUNT=43
 CHAP85_OPTIMAL_THRESHOLD=0.22
 CHAP85_BEST_MODEL=lightgbm
-CHAP85_FEATURES_COUNT=54
+CHAP85_FEATURES_COUNT=43
 
 # Configuration ML
 ML_MODELS_PATH=backend/results
@@ -2599,14 +2599,14 @@ def setup_chapters_environment():
         chapters_config = {
             'CHAPTERS': 'chap30,chap84,chap85',
             'CHAP30_OPTIMAL_THRESHOLD': '0.23',
-            'CHAP30_BEST_MODEL': 'xgboost',
-            'CHAP30_FEATURES_COUNT': '52',
+            'CHAP30_BEST_MODEL': 'catboost',
+            'CHAP30_FEATURES_COUNT': '43',
             'CHAP84_OPTIMAL_THRESHOLD': '0.22',
             'CHAP84_BEST_MODEL': 'xgboost',
-            'CHAP84_FEATURES_COUNT': '54',
+            'CHAP84_FEATURES_COUNT': '43',
             'CHAP85_OPTIMAL_THRESHOLD': '0.22',
             'CHAP85_BEST_MODEL': 'lightgbm',
-            'CHAP85_FEATURES_COUNT': '54'
+            'CHAP85_FEATURES_COUNT': '43'
         }
         
         for key, value in chapters_config.items():
@@ -2709,14 +2709,14 @@ API_JWT_SECRET=inspectia-jwt-secret-2024
 # Configuration chapitres
 CHAPTERS=chap30,chap84,chap85
 CHAP30_OPTIMAL_THRESHOLD=0.23
-CHAP30_BEST_MODEL=xgboost
-CHAP30_FEATURES_COUNT=52
+CHAP30_BEST_MODEL=catboost
+CHAP30_FEATURES_COUNT=43
 CHAP84_OPTIMAL_THRESHOLD=0.22
 CHAP84_BEST_MODEL=xgboost
-CHAP84_FEATURES_COUNT=54
+CHAP84_FEATURES_COUNT=43
 CHAP85_OPTIMAL_THRESHOLD=0.22
 CHAP85_BEST_MODEL=lightgbm
-CHAP85_FEATURES_COUNT=54
+CHAP85_FEATURES_COUNT=43
 
 # Configuration ML
 ML_MODELS_PATH=backend/results
@@ -3004,14 +3004,14 @@ def setup_chapters_environment():
         chapters_config = {
             'CHAPTERS': 'chap30,chap84,chap85',
             'CHAP30_OPTIMAL_THRESHOLD': '0.23',
-            'CHAP30_BEST_MODEL': 'xgboost',
-            'CHAP30_FEATURES_COUNT': '52',
+            'CHAP30_BEST_MODEL': 'catboost',
+            'CHAP30_FEATURES_COUNT': '43',
             'CHAP84_OPTIMAL_THRESHOLD': '0.22',
             'CHAP84_BEST_MODEL': 'xgboost',
-            'CHAP84_FEATURES_COUNT': '54',
+            'CHAP84_FEATURES_COUNT': '43',
             'CHAP85_OPTIMAL_THRESHOLD': '0.22',
             'CHAP85_BEST_MODEL': 'lightgbm',
-            'CHAP85_FEATURES_COUNT': '54'
+            'CHAP85_FEATURES_COUNT': '43'
         }
         
         for key, value in chapters_config.items():
@@ -3114,14 +3114,14 @@ API_JWT_SECRET=inspectia-jwt-secret-2024
 # Configuration chapitres
 CHAPTERS=chap30,chap84,chap85
 CHAP30_OPTIMAL_THRESHOLD=0.23
-CHAP30_BEST_MODEL=xgboost
-CHAP30_FEATURES_COUNT=52
+CHAP30_BEST_MODEL=catboost
+CHAP30_FEATURES_COUNT=43
 CHAP84_OPTIMAL_THRESHOLD=0.22
 CHAP84_BEST_MODEL=xgboost
-CHAP84_FEATURES_COUNT=54
+CHAP84_FEATURES_COUNT=43
 CHAP85_OPTIMAL_THRESHOLD=0.22
 CHAP85_BEST_MODEL=lightgbm
-CHAP85_FEATURES_COUNT=54
+CHAP85_FEATURES_COUNT=43
 
 # Configuration ML
 ML_MODELS_PATH=backend/results
@@ -3409,14 +3409,14 @@ def setup_chapters_environment():
         chapters_config = {
             'CHAPTERS': 'chap30,chap84,chap85',
             'CHAP30_OPTIMAL_THRESHOLD': '0.23',
-            'CHAP30_BEST_MODEL': 'xgboost',
-            'CHAP30_FEATURES_COUNT': '52',
+            'CHAP30_BEST_MODEL': 'catboost',
+            'CHAP30_FEATURES_COUNT': '43',
             'CHAP84_OPTIMAL_THRESHOLD': '0.22',
             'CHAP84_BEST_MODEL': 'xgboost',
-            'CHAP84_FEATURES_COUNT': '54',
+            'CHAP84_FEATURES_COUNT': '43',
             'CHAP85_OPTIMAL_THRESHOLD': '0.22',
             'CHAP85_BEST_MODEL': 'lightgbm',
-            'CHAP85_FEATURES_COUNT': '54'
+            'CHAP85_FEATURES_COUNT': '43'
         }
         
         for key, value in chapters_config.items():
@@ -3519,14 +3519,14 @@ API_JWT_SECRET=inspectia-jwt-secret-2024
 # Configuration chapitres
 CHAPTERS=chap30,chap84,chap85
 CHAP30_OPTIMAL_THRESHOLD=0.23
-CHAP30_BEST_MODEL=xgboost
-CHAP30_FEATURES_COUNT=52
+CHAP30_BEST_MODEL=catboost
+CHAP30_FEATURES_COUNT=43
 CHAP84_OPTIMAL_THRESHOLD=0.22
 CHAP84_BEST_MODEL=xgboost
-CHAP84_FEATURES_COUNT=54
+CHAP84_FEATURES_COUNT=43
 CHAP85_OPTIMAL_THRESHOLD=0.22
 CHAP85_BEST_MODEL=lightgbm
-CHAP85_FEATURES_COUNT=54
+CHAP85_FEATURES_COUNT=43
 
 # Configuration ML
 ML_MODELS_PATH=backend/results
@@ -3814,14 +3814,14 @@ def setup_chapters_environment():
         chapters_config = {
             'CHAPTERS': 'chap30,chap84,chap85',
             'CHAP30_OPTIMAL_THRESHOLD': '0.23',
-            'CHAP30_BEST_MODEL': 'xgboost',
-            'CHAP30_FEATURES_COUNT': '52',
+            'CHAP30_BEST_MODEL': 'catboost',
+            'CHAP30_FEATURES_COUNT': '43',
             'CHAP84_OPTIMAL_THRESHOLD': '0.22',
             'CHAP84_BEST_MODEL': 'xgboost',
-            'CHAP84_FEATURES_COUNT': '54',
+            'CHAP84_FEATURES_COUNT': '43',
             'CHAP85_OPTIMAL_THRESHOLD': '0.22',
             'CHAP85_BEST_MODEL': 'lightgbm',
-            'CHAP85_FEATURES_COUNT': '54'
+            'CHAP85_FEATURES_COUNT': '43'
         }
         
         for key, value in chapters_config.items():
@@ -3924,14 +3924,14 @@ API_JWT_SECRET=inspectia-jwt-secret-2024
 # Configuration chapitres
 CHAPTERS=chap30,chap84,chap85
 CHAP30_OPTIMAL_THRESHOLD=0.23
-CHAP30_BEST_MODEL=xgboost
-CHAP30_FEATURES_COUNT=52
+CHAP30_BEST_MODEL=catboost
+CHAP30_FEATURES_COUNT=43
 CHAP84_OPTIMAL_THRESHOLD=0.22
 CHAP84_BEST_MODEL=xgboost
-CHAP84_FEATURES_COUNT=54
+CHAP84_FEATURES_COUNT=43
 CHAP85_OPTIMAL_THRESHOLD=0.22
 CHAP85_BEST_MODEL=lightgbm
-CHAP85_FEATURES_COUNT=54
+CHAP85_FEATURES_COUNT=43
 
 # Configuration ML
 ML_MODELS_PATH=backend/results
@@ -4219,14 +4219,14 @@ def setup_chapters_environment():
         chapters_config = {
             'CHAPTERS': 'chap30,chap84,chap85',
             'CHAP30_OPTIMAL_THRESHOLD': '0.23',
-            'CHAP30_BEST_MODEL': 'xgboost',
-            'CHAP30_FEATURES_COUNT': '52',
+            'CHAP30_BEST_MODEL': 'catboost',
+            'CHAP30_FEATURES_COUNT': '43',
             'CHAP84_OPTIMAL_THRESHOLD': '0.22',
             'CHAP84_BEST_MODEL': 'xgboost',
-            'CHAP84_FEATURES_COUNT': '54',
+            'CHAP84_FEATURES_COUNT': '43',
             'CHAP85_OPTIMAL_THRESHOLD': '0.22',
             'CHAP85_BEST_MODEL': 'lightgbm',
-            'CHAP85_FEATURES_COUNT': '54'
+            'CHAP85_FEATURES_COUNT': '43'
         }
         
         for key, value in chapters_config.items():
@@ -4329,14 +4329,14 @@ API_JWT_SECRET=inspectia-jwt-secret-2024
 # Configuration chapitres
 CHAPTERS=chap30,chap84,chap85
 CHAP30_OPTIMAL_THRESHOLD=0.23
-CHAP30_BEST_MODEL=xgboost
-CHAP30_FEATURES_COUNT=52
+CHAP30_BEST_MODEL=catboost
+CHAP30_FEATURES_COUNT=43
 CHAP84_OPTIMAL_THRESHOLD=0.22
 CHAP84_BEST_MODEL=xgboost
-CHAP84_FEATURES_COUNT=54
+CHAP84_FEATURES_COUNT=43
 CHAP85_OPTIMAL_THRESHOLD=0.22
 CHAP85_BEST_MODEL=lightgbm
-CHAP85_FEATURES_COUNT=54
+CHAP85_FEATURES_COUNT=43
 
 # Configuration ML
 ML_MODELS_PATH=backend/results
@@ -4624,14 +4624,14 @@ def setup_chapters_environment():
         chapters_config = {
             'CHAPTERS': 'chap30,chap84,chap85',
             'CHAP30_OPTIMAL_THRESHOLD': '0.23',
-            'CHAP30_BEST_MODEL': 'xgboost',
-            'CHAP30_FEATURES_COUNT': '52',
+            'CHAP30_BEST_MODEL': 'catboost',
+            'CHAP30_FEATURES_COUNT': '43',
             'CHAP84_OPTIMAL_THRESHOLD': '0.22',
             'CHAP84_BEST_MODEL': 'xgboost',
-            'CHAP84_FEATURES_COUNT': '54',
+            'CHAP84_FEATURES_COUNT': '43',
             'CHAP85_OPTIMAL_THRESHOLD': '0.22',
             'CHAP85_BEST_MODEL': 'lightgbm',
-            'CHAP85_FEATURES_COUNT': '54'
+            'CHAP85_FEATURES_COUNT': '43'
         }
         
         for key, value in chapters_config.items():
@@ -4734,14 +4734,14 @@ API_JWT_SECRET=inspectia-jwt-secret-2024
 # Configuration chapitres
 CHAPTERS=chap30,chap84,chap85
 CHAP30_OPTIMAL_THRESHOLD=0.23
-CHAP30_BEST_MODEL=xgboost
-CHAP30_FEATURES_COUNT=52
+CHAP30_BEST_MODEL=catboost
+CHAP30_FEATURES_COUNT=43
 CHAP84_OPTIMAL_THRESHOLD=0.22
 CHAP84_BEST_MODEL=xgboost
-CHAP84_FEATURES_COUNT=54
+CHAP84_FEATURES_COUNT=43
 CHAP85_OPTIMAL_THRESHOLD=0.22
 CHAP85_BEST_MODEL=lightgbm
-CHAP85_FEATURES_COUNT=54
+CHAP85_FEATURES_COUNT=43
 
 # Configuration ML
 ML_MODELS_PATH=backend/results
@@ -5029,14 +5029,14 @@ def setup_chapters_environment():
         chapters_config = {
             'CHAPTERS': 'chap30,chap84,chap85',
             'CHAP30_OPTIMAL_THRESHOLD': '0.23',
-            'CHAP30_BEST_MODEL': 'xgboost',
-            'CHAP30_FEATURES_COUNT': '52',
+            'CHAP30_BEST_MODEL': 'catboost',
+            'CHAP30_FEATURES_COUNT': '43',
             'CHAP84_OPTIMAL_THRESHOLD': '0.22',
             'CHAP84_BEST_MODEL': 'xgboost',
-            'CHAP84_FEATURES_COUNT': '54',
+            'CHAP84_FEATURES_COUNT': '43',
             'CHAP85_OPTIMAL_THRESHOLD': '0.22',
             'CHAP85_BEST_MODEL': 'lightgbm',
-            'CHAP85_FEATURES_COUNT': '54'
+            'CHAP85_FEATURES_COUNT': '43'
         }
         
         for key, value in chapters_config.items():
@@ -5139,14 +5139,14 @@ API_JWT_SECRET=inspectia-jwt-secret-2024
 # Configuration chapitres
 CHAPTERS=chap30,chap84,chap85
 CHAP30_OPTIMAL_THRESHOLD=0.23
-CHAP30_BEST_MODEL=xgboost
-CHAP30_FEATURES_COUNT=52
+CHAP30_BEST_MODEL=catboost
+CHAP30_FEATURES_COUNT=43
 CHAP84_OPTIMAL_THRESHOLD=0.22
 CHAP84_BEST_MODEL=xgboost
-CHAP84_FEATURES_COUNT=54
+CHAP84_FEATURES_COUNT=43
 CHAP85_OPTIMAL_THRESHOLD=0.22
 CHAP85_BEST_MODEL=lightgbm
-CHAP85_FEATURES_COUNT=54
+CHAP85_FEATURES_COUNT=43
 
 # Configuration ML
 ML_MODELS_PATH=backend/results
@@ -5434,14 +5434,14 @@ def setup_chapters_environment():
         chapters_config = {
             'CHAPTERS': 'chap30,chap84,chap85',
             'CHAP30_OPTIMAL_THRESHOLD': '0.23',
-            'CHAP30_BEST_MODEL': 'xgboost',
-            'CHAP30_FEATURES_COUNT': '52',
+            'CHAP30_BEST_MODEL': 'catboost',
+            'CHAP30_FEATURES_COUNT': '43',
             'CHAP84_OPTIMAL_THRESHOLD': '0.22',
             'CHAP84_BEST_MODEL': 'xgboost',
-            'CHAP84_FEATURES_COUNT': '54',
+            'CHAP84_FEATURES_COUNT': '43',
             'CHAP85_OPTIMAL_THRESHOLD': '0.22',
             'CHAP85_BEST_MODEL': 'lightgbm',
-            'CHAP85_FEATURES_COUNT': '54'
+            'CHAP85_FEATURES_COUNT': '43'
         }
         
         for key, value in chapters_config.items():
@@ -5544,14 +5544,14 @@ API_JWT_SECRET=inspectia-jwt-secret-2024
 # Configuration chapitres
 CHAPTERS=chap30,chap84,chap85
 CHAP30_OPTIMAL_THRESHOLD=0.23
-CHAP30_BEST_MODEL=xgboost
-CHAP30_FEATURES_COUNT=52
+CHAP30_BEST_MODEL=catboost
+CHAP30_FEATURES_COUNT=43
 CHAP84_OPTIMAL_THRESHOLD=0.22
 CHAP84_BEST_MODEL=xgboost
-CHAP84_FEATURES_COUNT=54
+CHAP84_FEATURES_COUNT=43
 CHAP85_OPTIMAL_THRESHOLD=0.22
 CHAP85_BEST_MODEL=lightgbm
-CHAP85_FEATURES_COUNT=54
+CHAP85_FEATURES_COUNT=43
 
 # Configuration ML
 ML_MODELS_PATH=backend/results
@@ -5839,14 +5839,14 @@ def setup_chapters_environment():
         chapters_config = {
             'CHAPTERS': 'chap30,chap84,chap85',
             'CHAP30_OPTIMAL_THRESHOLD': '0.23',
-            'CHAP30_BEST_MODEL': 'xgboost',
-            'CHAP30_FEATURES_COUNT': '52',
+            'CHAP30_BEST_MODEL': 'catboost',
+            'CHAP30_FEATURES_COUNT': '43',
             'CHAP84_OPTIMAL_THRESHOLD': '0.22',
             'CHAP84_BEST_MODEL': 'xgboost',
-            'CHAP84_FEATURES_COUNT': '54',
+            'CHAP84_FEATURES_COUNT': '43',
             'CHAP85_OPTIMAL_THRESHOLD': '0.22',
             'CHAP85_BEST_MODEL': 'lightgbm',
-            'CHAP85_FEATURES_COUNT': '54'
+            'CHAP85_FEATURES_COUNT': '43'
         }
         
         for key, value in chapters_config.items():
@@ -5949,14 +5949,14 @@ API_JWT_SECRET=inspectia-jwt-secret-2024
 # Configuration chapitres
 CHAPTERS=chap30,chap84,chap85
 CHAP30_OPTIMAL_THRESHOLD=0.23
-CHAP30_BEST_MODEL=xgboost
-CHAP30_FEATURES_COUNT=52
+CHAP30_BEST_MODEL=catboost
+CHAP30_FEATURES_COUNT=43
 CHAP84_OPTIMAL_THRESHOLD=0.22
 CHAP84_BEST_MODEL=xgboost
-CHAP84_FEATURES_COUNT=54
+CHAP84_FEATURES_COUNT=43
 CHAP85_OPTIMAL_THRESHOLD=0.22
 CHAP85_BEST_MODEL=lightgbm
-CHAP85_FEATURES_COUNT=54
+CHAP85_FEATURES_COUNT=43
 
 # Configuration ML
 ML_MODELS_PATH=backend/results
@@ -6244,14 +6244,14 @@ def setup_chapters_environment():
         chapters_config = {
             'CHAPTERS': 'chap30,chap84,chap85',
             'CHAP30_OPTIMAL_THRESHOLD': '0.23',
-            'CHAP30_BEST_MODEL': 'xgboost',
-            'CHAP30_FEATURES_COUNT': '52',
+            'CHAP30_BEST_MODEL': 'catboost',
+            'CHAP30_FEATURES_COUNT': '43',
             'CHAP84_OPTIMAL_THRESHOLD': '0.22',
             'CHAP84_BEST_MODEL': 'xgboost',
-            'CHAP84_FEATURES_COUNT': '54',
+            'CHAP84_FEATURES_COUNT': '43',
             'CHAP85_OPTIMAL_THRESHOLD': '0.22',
             'CHAP85_BEST_MODEL': 'lightgbm',
-            'CHAP85_FEATURES_COUNT': '54'
+            'CHAP85_FEATURES_COUNT': '43'
         }
         
         for key, value in chapters_config.items():
@@ -6354,14 +6354,14 @@ API_JWT_SECRET=inspectia-jwt-secret-2024
 # Configuration chapitres
 CHAPTERS=chap30,chap84,chap85
 CHAP30_OPTIMAL_THRESHOLD=0.23
-CHAP30_BEST_MODEL=xgboost
-CHAP30_FEATURES_COUNT=52
+CHAP30_BEST_MODEL=catboost
+CHAP30_FEATURES_COUNT=43
 CHAP84_OPTIMAL_THRESHOLD=0.22
 CHAP84_BEST_MODEL=xgboost
-CHAP84_FEATURES_COUNT=54
+CHAP84_FEATURES_COUNT=43
 CHAP85_OPTIMAL_THRESHOLD=0.22
 CHAP85_BEST_MODEL=lightgbm
-CHAP85_FEATURES_COUNT=54
+CHAP85_FEATURES_COUNT=43
 
 # Configuration ML
 ML_MODELS_PATH=backend/results
@@ -6649,14 +6649,14 @@ def setup_chapters_environment():
         chapters_config = {
             'CHAPTERS': 'chap30,chap84,chap85',
             'CHAP30_OPTIMAL_THRESHOLD': '0.23',
-            'CHAP30_BEST_MODEL': 'xgboost',
-            'CHAP30_FEATURES_COUNT': '52',
+            'CHAP30_BEST_MODEL': 'catboost',
+            'CHAP30_FEATURES_COUNT': '43',
             'CHAP84_OPTIMAL_THRESHOLD': '0.22',
             'CHAP84_BEST_MODEL': 'xgboost',
-            'CHAP84_FEATURES_COUNT': '54',
+            'CHAP84_FEATURES_COUNT': '43',
             'CHAP85_OPTIMAL_THRESHOLD': '0.22',
             'CHAP85_BEST_MODEL': 'lightgbm',
-            'CHAP85_FEATURES_COUNT': '54'
+            'CHAP85_FEATURES_COUNT': '43'
         }
         
         for key, value in chapters_config.items():
@@ -6759,14 +6759,14 @@ API_JWT_SECRET=inspectia-jwt-secret-2024
 # Configuration chapitres
 CHAPTERS=chap30,chap84,chap85
 CHAP30_OPTIMAL_THRESHOLD=0.23
-CHAP30_BEST_MODEL=xgboost
-CHAP30_FEATURES_COUNT=52
+CHAP30_BEST_MODEL=catboost
+CHAP30_FEATURES_COUNT=43
 CHAP84_OPTIMAL_THRESHOLD=0.22
 CHAP84_BEST_MODEL=xgboost
-CHAP84_FEATURES_COUNT=54
+CHAP84_FEATURES_COUNT=43
 CHAP85_OPTIMAL_THRESHOLD=0.22
 CHAP85_BEST_MODEL=lightgbm
-CHAP85_FEATURES_COUNT=54
+CHAP85_FEATURES_COUNT=43
 
 # Configuration ML
 ML_MODELS_PATH=backend/results
@@ -7054,14 +7054,14 @@ def setup_chapters_environment():
         chapters_config = {
             'CHAPTERS': 'chap30,chap84,chap85',
             'CHAP30_OPTIMAL_THRESHOLD': '0.23',
-            'CHAP30_BEST_MODEL': 'xgboost',
-            'CHAP30_FEATURES_COUNT': '52',
+            'CHAP30_BEST_MODEL': 'catboost',
+            'CHAP30_FEATURES_COUNT': '43',
             'CHAP84_OPTIMAL_THRESHOLD': '0.22',
             'CHAP84_BEST_MODEL': 'xgboost',
-            'CHAP84_FEATURES_COUNT': '54',
+            'CHAP84_FEATURES_COUNT': '43',
             'CHAP85_OPTIMAL_THRESHOLD': '0.22',
             'CHAP85_BEST_MODEL': 'lightgbm',
-            'CHAP85_FEATURES_COUNT': '54'
+            'CHAP85_FEATURES_COUNT': '43'
         }
         
         for key, value in chapters_config.items():
@@ -7164,14 +7164,14 @@ API_JWT_SECRET=inspectia-jwt-secret-2024
 # Configuration chapitres
 CHAPTERS=chap30,chap84,chap85
 CHAP30_OPTIMAL_THRESHOLD=0.23
-CHAP30_BEST_MODEL=xgboost
-CHAP30_FEATURES_COUNT=52
+CHAP30_BEST_MODEL=catboost
+CHAP30_FEATURES_COUNT=43
 CHAP84_OPTIMAL_THRESHOLD=0.22
 CHAP84_BEST_MODEL=xgboost
-CHAP84_FEATURES_COUNT=54
+CHAP84_FEATURES_COUNT=43
 CHAP85_OPTIMAL_THRESHOLD=0.22
 CHAP85_BEST_MODEL=lightgbm
-CHAP85_FEATURES_COUNT=54
+CHAP85_FEATURES_COUNT=43
 
 # Configuration ML
 ML_MODELS_PATH=backend/results
@@ -7459,14 +7459,14 @@ def setup_chapters_environment():
         chapters_config = {
             'CHAPTERS': 'chap30,chap84,chap85',
             'CHAP30_OPTIMAL_THRESHOLD': '0.23',
-            'CHAP30_BEST_MODEL': 'xgboost',
-            'CHAP30_FEATURES_COUNT': '52',
+            'CHAP30_BEST_MODEL': 'catboost',
+            'CHAP30_FEATURES_COUNT': '43',
             'CHAP84_OPTIMAL_THRESHOLD': '0.22',
             'CHAP84_BEST_MODEL': 'xgboost',
-            'CHAP84_FEATURES_COUNT': '54',
+            'CHAP84_FEATURES_COUNT': '43',
             'CHAP85_OPTIMAL_THRESHOLD': '0.22',
             'CHAP85_BEST_MODEL': 'lightgbm',
-            'CHAP85_FEATURES_COUNT': '54'
+            'CHAP85_FEATURES_COUNT': '43'
         }
         
         for key, value in chapters_config.items():
@@ -7569,14 +7569,14 @@ API_JWT_SECRET=inspectia-jwt-secret-2024
 # Configuration chapitres
 CHAPTERS=chap30,chap84,chap85
 CHAP30_OPTIMAL_THRESHOLD=0.23
-CHAP30_BEST_MODEL=xgboost
-CHAP30_FEATURES_COUNT=52
+CHAP30_BEST_MODEL=catboost
+CHAP30_FEATURES_COUNT=43
 CHAP84_OPTIMAL_THRESHOLD=0.22
 CHAP84_BEST_MODEL=xgboost
-CHAP84_FEATURES_COUNT=54
+CHAP84_FEATURES_COUNT=43
 CHAP85_OPTIMAL_THRESHOLD=0.22
 CHAP85_BEST_MODEL=lightgbm
-CHAP85_FEATURES_COUNT=54
+CHAP85_FEATURES_COUNT=43
 
 # Configuration ML
 ML_MODELS_PATH=backend/results
@@ -7864,14 +7864,14 @@ def setup_chapters_environment():
         chapters_config = {
             'CHAPTERS': 'chap30,chap84,chap85',
             'CHAP30_OPTIMAL_THRESHOLD': '0.23',
-            'CHAP30_BEST_MODEL': 'xgboost',
-            'CHAP30_FEATURES_COUNT': '52',
+            'CHAP30_BEST_MODEL': 'catboost',
+            'CHAP30_FEATURES_COUNT': '43',
             'CHAP84_OPTIMAL_THRESHOLD': '0.22',
             'CHAP84_BEST_MODEL': 'xgboost',
-            'CHAP84_FEATURES_COUNT': '54',
+            'CHAP84_FEATURES_COUNT': '43',
             'CHAP85_OPTIMAL_THRESHOLD': '0.22',
             'CHAP85_BEST_MODEL': 'lightgbm',
-            'CHAP85_FEATURES_COUNT': '54'
+            'CHAP85_FEATURES_COUNT': '43'
         }
         
         for key, value in chapters_config.items():
@@ -7974,14 +7974,14 @@ API_JWT_SECRET=inspectia-jwt-secret-2024
 # Configuration chapitres
 CHAPTERS=chap30,chap84,chap85
 CHAP30_OPTIMAL_THRESHOLD=0.23
-CHAP30_BEST_MODEL=xgboost
-CHAP30_FEATURES_COUNT=52
+CHAP30_BEST_MODEL=catboost
+CHAP30_FEATURES_COUNT=43
 CHAP84_OPTIMAL_THRESHOLD=0.22
 CHAP84_BEST_MODEL=xgboost
-CHAP84_FEATURES_COUNT=54
+CHAP84_FEATURES_COUNT=43
 CHAP85_OPTIMAL_THRESHOLD=0.22
 CHAP85_BEST_MODEL=lightgbm
-CHAP85_FEATURES_COUNT=54
+CHAP85_FEATURES_COUNT=43
 
 # Configuration ML
 ML_MODELS_PATH=backend/results

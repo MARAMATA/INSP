@@ -8,13 +8,13 @@ from shared.advanced_reinforcement_learning import AdvancedRLManager
 from shared.ml_retraining_system import get_retraining_system
 
 # Configuration RL adaptée au chapitre 30 (Produits pharmaceutiques)
-# Intégration avec XGBoost - Validation F1: 0.9821 ⭐ (critère de sélection)
-# Test: F1=0.9811, AUC=0.9997, Precision=0.9876, Recall=0.9746
-# Seuils optimaux calculés: seuil=0.550, confiance_haute=0.900
+# Intégration avec CatBoost - Validation F1: 0.9808 ⭐ (critère de sélection)
+# Test: F1=0.9831, AUC=0.9997, Precision=0.9917, Recall=0.9746
+# Seuils optimaux calculés: seuil=0.200, confiance_haute=0.900
 # 3 niveaux = stratégies différentes optimisées pour les nouveaux modèles
-# - basic   -> epsilon-greedy avec seuils optimaux (0.550)
+# - basic   -> epsilon-greedy avec seuils optimaux (0.200)
 # - advanced-> UCB avec confiance élevée (0.900)
-# - expert  -> hybrid avec seuils optimaux (0.550)
+# - expert  -> hybrid avec seuils optimaux (0.200)
 _MANAGERS = {
     "basic":   AdvancedRLManager(chapter="chap30", epsilon=0.10, strategy="epsilon_greedy"),
     "advanced":AdvancedRLManager(chapter="chap30", epsilon=0.05, strategy="ucb"),

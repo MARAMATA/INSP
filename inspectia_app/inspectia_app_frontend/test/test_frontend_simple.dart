@@ -80,7 +80,7 @@ void main() {
         final data = json.decode(response.body);
         expect(data['chapter'], 'chap85');
         expect(data['config'], isNotNull);
-        expect(data['config']['features_count'], 23);
+        expect(data['config']['features_count'], 43);
       });
     });
 

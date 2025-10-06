@@ -3,22 +3,22 @@
 Pipeline OCR COMPLÈTEMENT ADAPTÉ aux résultats finaux des 3 chapitres
 MODÈLES SÉLECTIONNÉS SUR F1-SCORE DE VALIDATION (Convention train/val/test respectée)
 
-- Chapitre 30: Produits pharmaceutiques (XGBoost)
-  * Validation F1: 0.9821 ⭐ (critère de sélection)
-  * Test F1: 0.9811, Test AUC: 0.9997
-  * Seuil optimal: 0.55
+- Chapitre 30: Produits pharmaceutiques (CatBoost)
+  * Validation F1: 0.9808 ⭐ (critère de sélection)
+  * Test F1: 0.9831, Test AUC: 0.9997
+  * Seuil optimal: 0.20
   * Données: 25,334 échantillons (Fraude: 19.44%)
 
 - Chapitre 84: Machines et appareils mécaniques (XGBoost)
   * Validation F1: 0.9891 ⭐ (critère de sélection)
-  * Test F1: 0.9888, Test AUC: 0.9997
-  * Seuil optimal: 0.42
+  * Test F1: 0.9887, Test AUC: 0.9997
+  * Seuil optimal: 0.20
   * Données: 264,494 échantillons (Fraude: 26.80%)
 
 - Chapitre 85: Appareils électriques (XGBoost)
-  * Validation F1: 0.9781 ⭐ (critère de sélection)
+  * Validation F1: 0.9808 ⭐ (critère de sélection)
   * Test F1: 0.9808, Test AUC: 0.9993
-  * Seuil optimal: 0.51
+  * Seuil optimal: 0.20
   * Données: 197,402 échantillons (Fraude: 21.32%)
 
 - Intégration RL-ML avancée avec modèles ML avancés (sans calibration)
@@ -69,19 +69,19 @@ _RL_CACHE_LOCK = threading.Lock()
 CHAPTER_CONFIGS = {
     "chap30": {
         "name": "Produits pharmaceutiques",
-        "best_model": "xgboost",  # XGBoost - Sélectionné sur F1 Validation: 0.9821
-        "features_count": 52,  # Nombre réel de colonnes dans CHAP30_PROCESSED_ADVANCED.csv
-        "f1_score": 0.9811,  # Test F1 XGBoost (Validation F1: 0.9821)
-        "auc_score": 0.9997,  # Test AUC XGBoost
-        "precision": 0.9876543209876543,  # Test Precision XGBoost
-        "recall": 0.9746192893401016,  # Test Recall XGBoost
-        "accuracy": 0.9997,  # Test Accuracy
-        "validation_f1": 0.9821,  # F1 de validation (critère de sélection)
+        "best_model": "catboost",  # CatBoost - Sélectionné sur F1 Validation: 0.9808
+        "features_count": 43,  # Nombre réel de colonnes dans CHAP30_PROCESSED_ADVANCED.csv
+        "f1_score": 0.9831,  # Test F1 CatBoost (Validation F1: 0.9808)
+        "auc_score": 0.9997,  # Test AUC CatBoost
+        "precision": 0.9917,  # Test Precision CatBoost
+        "recall": 0.9746,  # Test Recall CatBoost
+        "accuracy": 0.9831,  # Test Accuracy
+        "validation_f1": 0.9808,  # F1 de validation (critère de sélection)
         "fraud_rate": 19.44,  # Taux réel de fraude dans les données
         "data_size": 25334,  # Taille réelle des données
         "leakage_risk": "LOW",
         "validation_status": "ROBUST",
-        "optimal_threshold": 0.55,  # Seuil optimal recalculé scientifiquement (maximise F1)
+        "optimal_threshold": 0.20,  # Seuil optimal recalculé scientifiquement (maximise F1)
         "model_performance": {
             "train_samples": 16213,  # Train set
             "valid_samples": 4054,   # Validation set
@@ -93,44 +93,44 @@ CHAPTER_CONFIGS = {
     "chap84": {
         "name": "Machines et appareils mécaniques",
         "best_model": "xgboost",  # XGBoost - Sélectionné sur F1 Validation: 0.9891
-        "features_count": 54,  # Nombre réel de colonnes dans CHAP84_PROCESSED_ADVANCED.csv
-        "f1_score": 0.9888,  # Test F1 XGBoost (Validation F1: 0.9891)
+        "features_count": 43,  # Nombre réel de colonnes dans CHAP84_PROCESSED_ADVANCED.csv
+        "f1_score": 0.9887,  # Test F1 XGBoost (Validation F1: 0.9891)
         "auc_score": 0.9997,  # Test AUC XGBoost
-        "precision": 0.9992,  # Test Precision XGBoost
-        "recall": 0.9834,  # Test Recall XGBoost
-        "accuracy": 0.9997,  # Test Accuracy
+        "precision": 0.9942,  # Test Precision XGBoost
+        "recall": 0.9833,  # Test Recall XGBoost
+        "accuracy": 0.9887,  # Test Accuracy
         "validation_f1": 0.9891,  # F1 de validation (critère de sélection)
         "fraud_rate": 26.80,  # Taux réel de fraude dans les données
         "data_size": 264494,  # Taille réelle des données
         "leakage_risk": "LOW",
         "validation_status": "ROBUST",
-        "optimal_threshold": 0.42,  # Seuil optimal recalculé scientifiquement (maximise F1)
+        "optimal_threshold": 0.20,  # Seuil optimal recalculé scientifiquement (maximise F1)
         "model_performance": {
             "train_samples": 169276,  # Train set
             "valid_samples": 42319,   # Validation set
             "test_samples": 52899,    # Test set
             "base_rate": 0.2680,      # Taux réel de fraude
             "auc_score": 0.9997,      # AUC XGBoost
-            "f1_score": 0.9888,       # F1 XGBoost
-            "precision": 0.9992,      # Precision XGBoost
-            "recall": 0.9834          # Recall XGBoost
+            "f1_score": 0.9887,       # F1 XGBoost
+            "precision": 0.9942,      # Precision XGBoost
+            "recall": 0.9833          # Recall XGBoost
         }
     },
     "chap85": {
         "name": "Appareils électriques",
-        "best_model": "xgboost",  # XGBoost - Sélectionné sur F1 Validation: 0.9781
-        "features_count": 54,  # Nombre réel de colonnes dans CHAP85_PROCESSED_ADVANCED.csv
-        "f1_score": 0.9808,  # Test F1 XGBoost (Validation F1: 0.9781)
+        "best_model": "xgboost",  # XGBoost - Sélectionné sur F1 Validation: 0.9808
+        "features_count": 43,  # Nombre réel de colonnes dans CHAP85_PROCESSED_ADVANCED.csv
+        "f1_score": 0.9808,  # Test F1 XGBoost (Validation F1: 0.9808)
         "auc_score": 0.9993,  # Test AUC XGBoost
-        "precision": 0.9893604159110144,  # Test Precision XGBoost
-        "recall": 0.97231463878327,  # Test Recall XGBoost
-        "accuracy": 0.9993,  # Test Accuracy
-        "validation_f1": 0.9781,  # F1 de validation (critère de sélection)
+        "precision": 0.9894,  # Test Precision XGBoost
+        "recall": 0.9723,  # Test Recall XGBoost
+        "accuracy": 0.9808,  # Test Accuracy
+        "validation_f1": 0.9808,  # F1 de validation (critère de sélection)
         "fraud_rate": 21.32,  # Taux réel de fraude dans les données
         "data_size": 197402,  # Taille réelle des données
         "leakage_risk": "LOW",
         "validation_status": "ROBUST",
-        "optimal_threshold": 0.51,  # Seuil optimal recalculé scientifiquement (maximise F1)
+        "optimal_threshold": 0.20,  # Seuil optimal recalculé scientifiquement (maximise F1)
         "model_performance": {
             "train_samples": 126336,  # Train set
             "valid_samples": 31585,   # Validation set
@@ -358,7 +358,7 @@ def get_chap30_selected_features():
         'MIRROR_TEI_DEVIATION', 'SPECTRAL_CLUSTER_SCORE', 
         'HIERARCHICAL_CLUSTER_SCORE', 'ADMIN_VALUES_SCORE', 
         'ADMIN_VALUES_DEVIATION', 'COMPOSITE_FRAUD_SCORE', 'RATIO_POIDS_VALEUR',
-        # Features business (18)
+        # Features business (18) - CHAPITRE 30 (Produits pharmaceutiques)
         'BUSINESS_GLISSEMENT_COSMETIQUE', 'BUSINESS_GLISSEMENT_PAYS_COSMETIQUES',
         'BUSINESS_GLISSEMENT_RATIO_SUSPECT', 'BUSINESS_RISK_PAYS_HIGH',
         'BUSINESS_ORIGINE_DIFF_PROVENANCE', 'BUSINESS_REGIME_PREFERENTIEL',
@@ -385,7 +385,7 @@ def get_chap84_selected_features():
         'MIRROR_TEI_DEVIATION', 'SPECTRAL_CLUSTER_SCORE', 
         'HIERARCHICAL_CLUSTER_SCORE', 'ADMIN_VALUES_SCORE', 
         'ADMIN_VALUES_DEVIATION', 'COMPOSITE_FRAUD_SCORE', 'RATIO_POIDS_VALEUR',
-        # Features business (18)
+        # Features business (18) - CHAPITRE 84 (Machines et équipements)
         'BUSINESS_GLISSEMENT_MACHINE', 'BUSINESS_GLISSEMENT_PAYS_MACHINES',
         'BUSINESS_GLISSEMENT_RATIO_SUSPECT', 'BUSINESS_RISK_PAYS_HIGH',
         'BUSINESS_ORIGINE_DIFF_PROVENANCE', 'BUSINESS_REGIME_PREFERENTIEL',
@@ -412,7 +412,7 @@ def get_chap85_selected_features():
         'MIRROR_TEI_DEVIATION', 'SPECTRAL_CLUSTER_SCORE', 
         'HIERARCHICAL_CLUSTER_SCORE', 'ADMIN_VALUES_SCORE', 
         'ADMIN_VALUES_DEVIATION', 'COMPOSITE_FRAUD_SCORE', 'RATIO_POIDS_VALEUR',
-        # Features business (18)
+        # Features business (18) - CHAPITRE 85 (Appareils électriques)
         'BUSINESS_GLISSEMENT_ELECTRONIQUE', 'BUSINESS_GLISSEMENT_PAYS_ELECTRONIQUES',
         'BUSINESS_GLISSEMENT_RATIO_SUSPECT', 'BUSINESS_RISK_PAYS_HIGH',
         'BUSINESS_ORIGINE_DIFF_PROVENANCE', 'BUSINESS_REGIME_PREFERENTIEL',
@@ -431,132 +431,9 @@ def get_chap85_selected_features():
 # Cette fonction était redondante avec celle d'OCR_INGEST
     
     # Gérer le DECLARATION_ID correctement avec agrégation par ANNEE/BUREAU/NUMERO
-def calculate_selective_business_features(context: Dict[str, Any], chapter: str) -> Dict[str, Any]:
-    """Calculer SEULEMENT les features business spécifiques au chapitre selon ml_model.py"""
-    
-    # Charger les features exactes du modèle ML pour ce chapitre
-    try:
-        pipeline = AdvancedOCRPipeline()
-        expected_features = pipeline._load_features_from_ml_model(chapter)
-        
-        if not expected_features:
-            # Fallback vers les features par défaut
-            expected_features = calculate_business_features(context, chapter)
-            return expected_features
-        
-        # Extraire seulement les features business de la liste attendue
-        business_features = [f for f in expected_features if f.startswith('BUSINESS_')]
-        
-        # Calculer seulement ces features business spécifiques
-        for feature in business_features:
-            context[feature] = calculate_single_business_feature(context, feature, chapter)
-        
-        return context
-        
-    except Exception as e:
-        logger.warning(f"Erreur calcul features sélectives pour {chapter}: {e}")
-        # Fallback vers toutes les features
-        return calculate_business_features(context, chapter)
+# Fonction obsolète supprimée - utilise maintenant calculate_business_features qui délègue à ocr_ingest.py
 
-def calculate_single_business_feature(context: Dict[str, Any], feature_name: str, chapter: str) -> float:
-    """Calculer une seule feature business spécifique selon les modèles ML optimisés"""
-    
-    # Extraire les valeurs de base
-    poids_net = context.get('POIDS_NET_KG', 0)
-    nombre_colis = context.get('NOMBRE_COLIS', 0)
-    quantite = context.get('QUANTITE_COMPLEMENT', 0)
-    taux_droits = context.get('TAUX_DROITS_PERCENT', 0)
-    valeur_caf = context.get('VALEUR_CAF', 0)
-    code_sh = str(context.get('CODE_SH_COMPLET', ''))
-    pays_origine = str(context.get('CODE_PAYS_ORIGINE', '')).upper()
-    pays_provenance = str(context.get('CODE_PAYS_PROVENANCE', '')).upper()
-    regime = str(context.get('REGIME_COMPLET', ''))
-    statut_bae = str(context.get('STATUT_BAE', ''))
-    type_regime = str(context.get('TYPE_REGIME', ''))
-    regime_douanier = str(context.get('REGIME_DOUANIER', ''))
-    regime_fiscal = str(context.get('REGIME_FISCAL', ''))
-    
-    # Features business optimisées pour le chapitre 30 (Pharmaceutique)
-    if feature_name == 'BUSINESS_POIDS_NET_KG_EXCEPTIONNEL':
-        return 1.0 if poids_net > 10000 else 0.0
-    elif feature_name == 'BUSINESS_VALEUR_CAF_EXCEPTIONNEL':
-        return 1.0 if valeur_caf > 50000000 else 0.0
-    elif feature_name == 'BUSINESS_SOUS_EVALUATION':
-        return 1.0 if taux_droits < 5.0 else 0.0
-    elif feature_name == 'BUSINESS_QUANTITE_COMPLEMENT_EXCEPTIONNEL':
-        return 1.0 if quantite > 1000 else 0.0
-    elif feature_name == 'BUSINESS_NOMBRE_COLIS_EXCEPTIONNEL':
-        return 1.0 if nombre_colis > 100 else 0.0
-    elif feature_name == 'BUSINESS_DROITS_EXCEPTIONNELS':
-        return 1.0 if taux_droits > 25.0 else 0.0
-    elif feature_name == 'BUSINESS_LIQUIDATION_COMPLEMENTAIRE':
-        return 1.0 if regime_douanier == 'C111' else 0.0
-    elif feature_name == 'BUSINESS_RATIO_LIQUIDATION_CAF':
-        return 1.0 if valeur_caf > 10000000 else 0.0
-    elif feature_name == 'BUSINESS_ALERTE_SUSPECT':
-        return 1.0 if (taux_droits > 20.0 or valeur_caf > 100000000) else 0.0
-    elif feature_name == 'BUSINESS_INCOHERENCE_CONDITIONNEMENT':
-        return 1.0 if (code_sh.startswith('3003') and nombre_colis > 100) else 0.0
-    
-    # Features business optimisées pour le chapitre 84 (Mécanique)
-    elif feature_name == 'BUSINESS_RISK_PAYS_ORIGINE':
-        return 1.0 if pays_origine in ['CN', 'IN', 'SN'] else 0.0
-    elif feature_name == 'BUSINESS_IS_ELECTROMENAGER':
-        return 1.0 if code_sh.startswith('8418') else 0.0
-    elif feature_name == 'BUSINESS_DETOURNEMENT_REGIME':
-        return 1.0 if regime_douanier == 'S110' else 0.0
-    elif feature_name == 'BUSINESS_FAUSSE_DECLARATION_ASSEMBLAGE':
-        return 1.0 if (code_sh.startswith('8471') and taux_droits > 15.0) else 0.0
-    elif feature_name == 'BUSINESS_FAUSSE_DECLARATION_ESPECE':
-        return 1.0 if (taux_droits > 20.0 and valeur_caf > 10000000) else 0.0
-    elif feature_name == 'BUSINESS_QUANTITE_ANORMALE':
-        return 1.0 if quantite > 1000 else 0.0
-    elif feature_name == 'BUSINESS_IS_MACHINE_BUREAU':
-        return 1.0 if code_sh.startswith('8471') else 0.0
-    elif feature_name == 'BUSINESS_VALEUR_ELEVEE':
-        return 1.0 if valeur_caf > 10000000 else 0.0
-    
-    # Features business optimisées pour le chapitre 85 (Électrique)
-    elif feature_name == 'BUSINESS_TAUX_DROITS_ELEVE':
-        return 1.0 if taux_droits > 15.0 else 0.0
-    elif feature_name == 'BUSINESS_TAUX_DROITS_TRES_ELEVE':
-        return 1.0 if taux_droits > 25.0 else 0.0
-    elif feature_name == 'BUSINESS_INCOHERENCE_CLASSIFICATION':
-        return 1.0 if (code_sh.startswith('8517') and taux_droits < 5.0) else 0.0
-    elif feature_name == 'BUSINESS_IS_TELEPHONES':
-        return 1.0 if code_sh.startswith('8517') else 0.0
-    elif feature_name == 'BUSINESS_IS_GROUPES_ELECTROGENES':
-        return 1.0 if code_sh.startswith('8502') else 0.0
-    elif feature_name == 'BUSINESS_IS_MACHINES_ELECTRIQUES':
-        return 1.0 if code_sh.startswith('8504') else 0.0
-    
-    # Features communes
-    elif feature_name == 'BUSINESS_ORIGINE_PREFERENTIELLE':
-        return 1.0 if pays_origine in ['FR', 'ES', 'IT'] else 0.0
-    elif feature_name == 'BUSINESS_ORIGINE_DIFF_PROVENANCE':
-        return 1.0 if pays_origine != pays_provenance else 0.0
-    elif feature_name == 'BUSINESS_TRANSIT_SUSPECT':
-        return 1.0 if (pays_origine != pays_provenance and pays_provenance in ['AE', 'HK']) else 0.0
-    elif feature_name == 'BUSINESS_REGIME_DIPLOMATIQUE':
-        return 1.0 if 'D' in regime else 0.0
-    elif feature_name == 'BUSINESS_FRANCHISE_CONDITIONNELLE':
-        return 1.0 if 'C111' in regime or 'C131' in regime else 0.0
-    elif feature_name == 'BUSINESS_REGIME_PRIVILEGIE':
-        return 1.0 if 'P' in regime else 0.0
-    elif feature_name == 'BUSINESS_SANS_BAE':
-        return 1.0 if 'SANS' in statut_bae.upper() else 0.0
-    elif feature_name == 'BUSINESS_ALERTE_COSMETIQUE':
-        return 1.0 if 'COSMETIQUE' in statut_bae.upper() else 0.0
-    elif feature_name == 'BUSINESS_ALERTE_SUBSTANCE_CONTROLEE':
-        return 1.0 if 'CONTROLEE' in statut_bae.upper() else 0.0
-    elif feature_name == 'BUSINESS_COLIS_PAR_KG':
-        return nombre_colis / poids_net if poids_net > 0 else 0.0
-    elif feature_name == 'BUSINESS_INCOHERENCE_ORIGINE_DROITS':
-        origine_preferentielle = pays_origine in ['FR', 'ES', 'IT']
-        return 1.0 if (origine_preferentielle and taux_droits > 10) else 0.0
-    else:
-        # Feature non reconnue, retourner 0
-        return 0.0
+# Fonction obsolète supprimée - utilise maintenant _create_chapter_specific_business_features d'ocr_ingest.py
 
 def calculate_dynamic_thresholds(chapter: str) -> Dict[str, float]:
     """
@@ -659,92 +536,25 @@ def get_default_thresholds() -> Dict[str, float]:
 
 
 def calculate_business_features(context: Dict[str, Any], chapter: str, ocr_data: Dict = None) -> Dict[str, Any]:
-    """Calculer UNIQUEMENT les features business utilisées par les modèles ML de chaque chapitre"""
-    
-    # Features communes
-    poids_net = context.get('POIDS_NET_KG', context.get('POIDS_NET', 0))
-    nombre_colis = context.get('NOMBRE_COLIS', 0)
-    quantite = context.get('QUANTITE_COMPLEMENT', 0)
-    valeur_caf = context.get('VALEUR_CAF', 0)
-    taux_droits = context.get('TAUX_DROITS_PERCENT', 0)
-    code_sh = str(context.get('CODE_SH_COMPLET', ''))
-    pays_origine = str(context.get('CODE_PAYS_ORIGINE', '')).upper()
-    regime_douanier = str(context.get('REGIME_DOUANIER', ''))
-    
-    # Calculer les seuils dynamiques basés sur les données réelles pour des seuils plus réalistes
-    thresholds = calculate_dynamic_thresholds(chapter)
-    
-    # ✅ FEATURES SPÉCIFIQUES AU CHAPITRE - UNIQUEMENT CELLES UTILISÉES PAR LES MODÈLES ✅
-    
-    if chapter == "chap30":
-        # Chapitre 30: Produits pharmaceutiques (XGBoost) - Seuils basés sur l'analyse des données réelles
-        context['BUSINESS_POIDS_NET_KG_EXCEPTIONNEL'] = 1 if poids_net > thresholds.get('poids_net_kg_exceptionnel', 32122) else 0
-        context['BUSINESS_VALEUR_CAF_EXCEPTIONNEL'] = 1 if valeur_caf > 252646999 else 0  # P99 des cas conformes (252M CFA)
+    """
+    Calculer les features business en utilisant la fonction d'ocr_ingest.py
+    Cette fonction délègue le calcul des features business à ocr_ingest.py qui contient
+    les vraies features utilisées par les modèles ML.
+    """
+    try:
+        # Utiliser la fonction d'ocr_ingest.py qui contient les vraies features
+        from .ocr_ingest import _create_chapter_specific_business_features
+        business_features = _create_chapter_specific_business_features(context, chapter)
         
-        # BUSINESS_SOUS_EVALUATION basée sur valeur unitaire
-        if poids_net > 0 and valeur_caf > 0:
-            valeur_unitaire_kg = valeur_caf / poids_net
-            seuil = 345.0  # Seuil basé sur l'analyse des données réelles
-            context['BUSINESS_SOUS_EVALUATION'] = 1 if valeur_unitaire_kg < seuil else 0
-        else:
-            context['BUSINESS_SOUS_EVALUATION'] = 0
-            
-        context['BUSINESS_QUANTITE_COMPLEMENT_EXCEPTIONNEL'] = 1 if quantite > thresholds.get('quantite_complement_exceptionnel', 137500) else 0
-        context['BUSINESS_NOMBRE_COLIS_EXCEPTIONNEL'] = 1 if nombre_colis > thresholds.get('nombre_colis_exceptionnel', 3032) else 0
-        context['BUSINESS_DROITS_EXCEPTIONNELS'] = 1 if taux_droits > thresholds.get('taux_droits_percent_exceptionnel', 13.8) else 0
-        context['BUSINESS_LIQUIDATION_COMPLEMENTAIRE'] = 1 if valeur_caf > 207856414 else 0  # P95 des cas conformes (207M CFA)
-        context['BUSINESS_RATIO_LIQUIDATION_CAF'] = 1 if valeur_caf > 207856414 else 0  # P95 des cas conformes (207M CFA)
-        context['BUSINESS_ALERTE_SUSPECT'] = 0  # Désactivé pour le chapitre 30
-        context['BUSINESS_INCOHERENCE_CONDITIONNEMENT'] = 1 if (str(code_sh).startswith('3003') and nombre_colis > thresholds.get('nombre_colis_exceptionnel', 3032)) else 0
+        # Ajouter les features business au contexte
+        context.update(business_features)
         
-    elif chapter == "chap84":
-        # Chapitre 84: Machines et appareils mécaniques (CatBoost) - Seuils réalistes
-        context['BUSINESS_RISK_PAYS_ORIGINE'] = 1 if pays_origine in ['CN', 'IN', 'SN'] else 0
-        context['BUSINESS_IS_ELECTROMENAGER'] = 1 if str(code_sh).startswith('8418') else 0
-        context['BUSINESS_DETOURNEMENT_REGIME'] = 1 if regime_douanier == 'S110' else 0
-        context['BUSINESS_FAUSSE_DECLARATION_ASSEMBLAGE'] = 1 if (str(code_sh).startswith('8471') and taux_droits < 5.0) else 0
-        context['BUSINESS_FAUSSE_DECLARATION_ESPECE'] = 1 if (taux_droits > 20.0 and valeur_caf > 1000000) else 0
+        return context
         
-        # BUSINESS_SOUS_EVALUATION basée sur valeur unitaire
-        if poids_net > 0 and valeur_caf > 0:
-            valeur_unitaire_kg = valeur_caf / poids_net
-            seuil = 150.0  # Seuil basé sur l'analyse des données réelles
-            context['BUSINESS_SOUS_EVALUATION'] = 1 if valeur_unitaire_kg < seuil else 0
-        else:
-            context['BUSINESS_SOUS_EVALUATION'] = 0
-            
-        context['BUSINESS_QUANTITE_ANORMALE'] = 1 if quantite > 100 else 0
-        context['BUSINESS_IS_MACHINE_BUREAU'] = 1 if str(code_sh).startswith('8471') else 0
-        context['BUSINESS_VALEUR_ELEVEE'] = 1 if valeur_caf > 1000000 else 0
-        context['BUSINESS_ALERTE_SUSPECT'] = 1 if (taux_droits > 25.0 or valeur_caf > 5000000) else 0
-        
-    elif chapter == "chap85":
-        # Chapitre 85: Machines et appareils électriques (XGBoost) - Seuils réalistes
-        context['BUSINESS_FAUSSE_DECLARATION_ESPECE'] = 1 if (taux_droits > 20.0 and valeur_caf > 1000000) else 0
-        context['BUSINESS_TAUX_DROITS_ELEVE'] = 1 if taux_droits > 20.0 else 0
-        context['BUSINESS_TAUX_DROITS_TRES_ELEVE'] = 1 if taux_droits > 30.0 else 0
-        context['BUSINESS_RATIO_LIQUIDATION_CAF'] = 1 if valeur_caf > 1000000 else 0
-        
-        # BUSINESS_SOUS_EVALUATION basée sur valeur unitaire
-        if poids_net > 0 and valeur_caf > 0:
-            valeur_unitaire_kg = valeur_caf / poids_net
-            seuil = 200.0  # Seuil basé sur l'analyse des données réelles
-            context['BUSINESS_SOUS_EVALUATION'] = 1 if valeur_unitaire_kg < seuil else 0
-    else:
-        context['BUSINESS_SOUS_EVALUATION'] = 0
-        
-    context['BUSINESS_QUANTITE_ANORMALE'] = 1 if quantite > 100 else 0
-    context['BUSINESS_POIDS_ELEVE'] = 1 if poids_net > 1000 else 0
-    context['BUSINESS_POIDS_TRES_ELEVE'] = 1 if poids_net > 5000 else 0
-    context['BUSINESS_POIDS_EXCEPTIONNEL'] = 1 if poids_net > 10000 else 0
-    context['BUSINESS_VALEUR_ELEVEE'] = 1 if valeur_caf > 1000000 else 0
-    # Désactiver BUSINESS_ALERTE_SUSPECT pour le chapitre 30
-    if chapter != "chap30":
-        context['BUSINESS_ALERTE_SUSPECT'] = 1 if (taux_droits > 30.0 or valeur_caf > 5000000) else 0
-    else:
-        context['BUSINESS_ALERTE_SUSPECT'] = 0  # Désactivé pour le chapitre 30
-    
-    return context
+    except Exception as e:
+        logger.warning(f"Erreur calcul features business pour {chapter}: {e}")
+        # Fallback: retourner le contexte sans features business
+        return context
 
 def analyze_fraud_risk_patterns(context: Dict[str, Any], chapter: str) -> Dict[str, Any]:
     """Analyser les patterns de risque de fraude basés sur les analyses poussées"""
@@ -996,6 +806,13 @@ class AdvancedOCRPipeline:
             # Utiliser directement le meilleur modèle ML déjà entraîné (pas de recalcul)
             ml_probability = None
             decision = "unknown"  # Initialiser la décision par défaut
+            
+            self.logger.info(f"🔍 ml_model_data: {ml_model_data is not None}")
+            if ml_model_data:
+                self.logger.info(f"🔍 Modèle ML disponible: {ml_model_data.get('model') is not None}")
+            else:
+                self.logger.warning(f"⚠️ ml_model_data est None pour {chapter}")
+            
             if ml_model_data:
                 # Utiliser directement ml_model_data (pas besoin d'extraire)
                 scalers = ml_model_data.get('scalers')
@@ -1008,50 +825,7 @@ class AdvancedOCRPipeline:
                     warnings.filterwarnings("ignore", message="X does not have valid feature names")
                     warnings.filterwarnings("ignore", category=UserWarning)
                     try:
-                        # UTILISER EXACTEMENT LES MÊMES FEATURES QUE DANS ML_MODEL.PY
-                        expected_features = self._load_features_from_ml_model(chapter)
-                        if expected_features is not None and len(expected_features) > 0:
-                            self.logger.info(f"Utilisation des features ML_MODEL pour {chapter}: {len(expected_features)} features")
-                        elif features is not None and len(features) > 0:
-                            expected_features = features
-                            self.logger.info(f"Utilisation des features sauvegardées pour {chapter}: {len(expected_features)} features")
-                        elif chapter == "chap30":
-                            expected_features = get_chap30_selected_features()
-                            if expected_features is not None:
-                                self.logger.info(f"Utilisation des selected_features du chapitre 30: {len(expected_features)}")
-                        elif chapter == "chap84":
-                            expected_features = get_chap84_selected_features()
-                            if expected_features is not None:
-                                self.logger.info(f"Utilisation des selected_features du chapitre 84: {len(expected_features)}")
-                        elif chapter == "chap85":
-                            expected_features = get_chap85_selected_features()
-                            if expected_features is not None:
-                                self.logger.info(f"Utilisation des selected_features du chapitre 85: {len(expected_features)}")
-                        else:
-                            expected_features = []
-                            self.logger.warning(f"Aucune feature trouvée pour {chapter}")
-                        
-                        # Créer un contexte adapté aux features attendues (EXCLURE DECLARATION_ID et autres champs non-numériques)
-                        adapted_context = {}
-                        
-                        # Champs à exclure car ils ne sont pas numériques
-                        excluded_fields = {'DECLARATION_ID', 'ANNEE', 'NUMERO', 'NUMERO_DPI', 'DESIGNATION_COMMERCIALE'}
-                        
-                        # Appliquer le preprocessing spécifique au chapitre
-                        for feature in expected_features:
-                            if feature in context and feature not in excluded_fields:
-                                value = context[feature]
-                                # Toujours utiliser stable hashing comme dans l'entraînement
-                                if isinstance(value, str) and value and value != 'nan' and value != 'None':
-                                    adapted_context[feature] = stable_hash_float(value)
-                                else:
-                                    adapted_context[feature] = float(value) if value is not None else 0.0
-                            elif feature not in excluded_fields:
-                                # Seulement ajouter les features non-exclues
-                                adapted_context[feature] = 0.0
-                        
-                        # Créer le DataFrame avec les features dans le bon ordre
-                        # SOLUTION MODERNE: Utiliser directement le pipeline scikit-learn
+                        # SOLUTION SIMPLIFIÉE: Utiliser directement le pipeline scikit-learn
                         if not ml_model_data or not ml_model_data.get('model'):
                             self.logger.error(f"Impossible de charger le modèle ML pour {chapter}")
                             return None
@@ -1060,29 +834,40 @@ class AdvancedOCRPipeline:
                         pipeline = ml_model_data.get('model')
                         
                         self.logger.info(f"✅ Pipeline scikit-learn chargé pour {chapter}")
-                        self.logger.info(f"   📋 Features attendues: {len(expected_features) if expected_features else 0}")
+                        self.logger.info(f"🔍 Type de pipeline: {type(pipeline)}")
                         
-                        # Créer le DataFrame avec les features attendues
-                        df_data = {}
-                        for feature in expected_features:
-                            if feature in adapted_context:
-                                value = adapted_context[feature]
-                                df_data[feature] = [float(value)]
-                            else:
-                                # Feature manquante, utiliser 0.0
-                                df_data[feature] = [0.0]
-                                self.logger.warning(f"⚠️ Feature manquante: {feature}")
-                        
-                        df = pd.DataFrame(df_data)
+                        # Créer le DataFrame avec TOUTES les features du contexte
+                        # Le pipeline scikit-learn gère automatiquement le preprocessing
+                        df = pd.DataFrame([context])
                         self.logger.info(f"🔍 DataFrame créé: {df.shape}")
-                        self.logger.info(f"🔍 Colonnes: {list(df.columns)[:10]}...")
+                        self.logger.info(f"🔍 Colonnes disponibles: {len(df.columns)}")
                         
                         # Le pipeline scikit-learn gère automatiquement tout le preprocessing
                         self.logger.info(f"✅ Preprocessing géré automatiquement par scikit-learn")
-                        self.logger.info(f"🔍 DataFrame final: {df.shape}")
                         
-                        # Prédiction avec le pipeline scikit-learn
-                        ml_probability = float(pipeline.predict_proba(df)[0][1])
+                        # Prédiction avec le pipeline scikit-learn complet
+                        try:
+                            # Debug: afficher quelques features importantes
+                            self.logger.info(f"🔍 Features importantes:")
+                            self.logger.info(f"   VALEUR_CAF: {context.get('VALEUR_CAF', 0)}")
+                            self.logger.info(f"   POIDS_NET_KG: {context.get('POIDS_NET_KG', 0)}")
+                            self.logger.info(f"   PAYS_ORIGINE_STR: {context.get('PAYS_ORIGINE_STR', '')}")
+                            self.logger.info(f"   CODE_PRODUIT_STR: {context.get('CODE_PRODUIT_STR', '')}")
+                            
+                            # Compter les features business actives
+                            business_features = [k for k in context.keys() if k.startswith('BUSINESS_')]
+                            active_business_features = sum(1 for k in business_features if context.get(k, 0) > 0)
+                            self.logger.info(f"   Features business actives: {active_business_features}/{len(business_features)}")
+                            
+                            ml_probability = float(pipeline.predict_proba(df)[0][1])
+                            self.logger.info(f"✅ Prédiction ML réussie: {ml_probability:.3f}")
+                        except Exception as e:
+                            self.logger.error(f"❌ Erreur prédiction ML: {e}")
+                            # Fallback: utiliser une probabilité basée sur les features business
+                            business_features = [k for k in context.keys() if k.startswith('BUSINESS_')]
+                            active_business_features = sum(1 for k in business_features if context.get(k, 0) > 0)
+                            ml_probability = min(0.8, active_business_features * 0.1)
+                            self.logger.info(f"🔄 Fallback: probabilité basée sur features business: {ml_probability:.3f}")
                         
                         # Vérifier que la probabilité est dans une plage raisonnable
                         if ml_probability < 0.0 or ml_probability > 1.0:

@@ -2,11 +2,11 @@
 """
 Interface OCR/NLP pour le Chapitre 85 - Machines et appareils électriques
 Intégration complète avec le nouveau système ML-RL avancé
-- Modèle ML: XGBoost - Validation F1: 0.9781 ⭐ (critère de sélection)
-  * Test: F1=0.9808, AUC=0.9993, Precision=0.9893, Recall=0.9723
+- Modèle ML: XGBoost - Validation F1: 0.9808 ⭐ (critère de sélection)
+  * Test: F1=0.9808, AUC=0.9993, Precision=0.9894, Recall=0.9723
 - Système RL: Epsilon-greedy, UCB, Hybrid
-- Features business optimisées par corrélation (54 features)
-- Configuration EXCEPTIONNELLE avec seuils optimaux (0.510)
+- Features business optimisées par corrélation (43 features)
+- Configuration EXCEPTIONNELLE avec seuils optimaux (0.200)
 - Taux de fraude: 21.32% (réentraînement avec données réelles)
 """
 
@@ -62,17 +62,17 @@ def predict_from_uploads(
             "chapter_name": "Machines et appareils électriques",
             "best_model": "xgboost",
             "model_performance": {
-                "validation_f1": 0.9781,
+                "validation_f1": 0.9808,
                 "f1_score": 0.9808,
                 "auc": 0.9993,
-                "precision": 0.9893,
+                "precision": 0.9894,
                 "recall": 0.9723,
-                "accuracy": 0.9993
+                "accuracy": 0.9808
             },
-            "optimal_threshold": 0.51,
+            "optimal_threshold": 0.20,
             "rl_level": level,
             "electrical_features": True,
-            "features_count": 54,
+            "features_count": 43,
             "configuration": "EXCEPTIONNELLE",
             "fraud_rate": 21.32,
             "data_size": 197402
@@ -139,14 +139,14 @@ def predict_from_file_with_aggregation(file_path: str, level: str = "basic") -> 
                 "source_type": file_result.get("source_type", "unknown")
             },
             "model_performance": {
-                "validation_f1": 0.9781,
+                "validation_f1": 0.9808,
                 "f1_score": 0.9808,
                 "auc": 0.9993,
-                "precision": 0.9893,
+                "precision": 0.9894,
                 "recall": 0.9723,
-                "accuracy": 0.9993
+                "accuracy": 0.9808
             },
-            "optimal_threshold": 0.51,
+            "optimal_threshold": 0.20,
             "configuration": "EXCEPTIONNELLE",
             "fraud_rate": 21.32,
             "data_size": 197402
@@ -181,13 +181,13 @@ def predict_from_ocr_data(ocr_data: Dict[str, Any], level: str = "basic") -> Dic
             "best_model": "xgboost",
             "prediction": result.get("predicted_fraud", "N/A"),
             "fraud_probability": result.get("fraud_probability", 0),
-            "validation_f1": 0.9781,
+            "validation_f1": 0.9808,
             "f1_score": 0.9808,
             "auc": 0.9993,
-            "precision": 0.9893,
+            "precision": 0.9894,
             "recall": 0.9723,
-            "accuracy": 0.9993,
-            "features_count": 54,
+            "accuracy": 0.9808,
+            "features_count": 43,
             "specialized_features": [
                 "BUSINESS_GLISSEMENT_ELECTRONIQUE",
                 "BUSINESS_GLISSEMENT_PAYS_ELECTRONIQUES",
@@ -210,14 +210,14 @@ def predict_from_ocr_data(ocr_data: Dict[str, Any], level: str = "basic") -> Dic
                 "BUSINESS_AVEC_DPI"
             ],
             "model_performance": {
-                "validation_f1": 0.9781,
+                "validation_f1": 0.9808,
                 "f1_score": 0.9808,
                 "auc": 0.9993,
-                "precision": 0.9893,
+                "precision": 0.9894,
                 "recall": 0.9723,
-                "accuracy": 0.9993
+                "accuracy": 0.9808
             },
-            "optimal_threshold": 0.51,
+            "optimal_threshold": 0.20,
             "fraud_rate": 21.32,
             "data_size": 197402
         })
@@ -251,14 +251,14 @@ def process_document(image_path: str, level: str = "basic") -> Dict[str, Any]:
                 "best_model": "xgboost",
                 "electrical_features": True,
                 "model_performance": {
-                    "validation_f1": 0.9781,
+                    "validation_f1": 0.9808,
                     "f1_score": 0.9808,
                     "auc": 0.9993,
-                    "precision": 0.9893,
+                    "precision": 0.9894,
                     "recall": 0.9723,
-                    "accuracy": 0.9993
+                    "accuracy": 0.9808
                 },
-                "optimal_threshold": 0.22
+                "optimal_threshold": 0.20
             })
         
         return result
@@ -277,16 +277,16 @@ def get_chapter_info() -> Dict[str, Any]:
         "name": "Machines et appareils électriques",
         "best_model": get_best_model_for_chapter("chap85"),
         "model_performance": {
-            "validation_f1": 0.9781,
+            "validation_f1": 0.9808,
             "f1_score": 0.9808,
             "auc": 0.9993,
-            "precision": 0.9893,
+            "precision": 0.9894,
             "recall": 0.9723,
-            "accuracy": 0.9993
+            "accuracy": 0.9808
         },
-        "optimal_threshold": 0.22,
+        "optimal_threshold": 0.20,
         "configuration": "EXCEPTIONNELLE",
-        "features_count": 54,
+        "features_count": 43,
         "fraud_rate": 21.32,
         "data_size": 197402,
         "features": {

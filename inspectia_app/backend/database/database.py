@@ -170,7 +170,7 @@ class PostgreSQLConnection:
     def execute_query(self, query: str, params: tuple = None, fetch: bool = True):
         """Exécute une requête PostgreSQL"""
         try:
-            cursor = self.get_cursor()
+            cursor = self.get_cursor(dict_cursor=True)
             cursor.execute(query, params)
             
             if fetch:

@@ -1012,9 +1012,9 @@ class AdvancedRLManager:
         try:
             # Déterminer le meilleur modèle selon F1 de validation
             model_priority = {
-                "chap30": "xgboost",   # XGBoost - Validation F1: 0.9821 ⭐ Test: F1=0.9811, AUC=0.9997
-                "chap84": "xgboost",   # XGBoost - Validation F1: 0.9891 ⭐ Test: F1=0.9888, AUC=0.9997
-                "chap85": "xgboost"    # XGBoost - Validation F1: 0.9781 ⭐ Test: F1=0.9808, AUC=0.9993
+                "chap30": "catboost",  # CatBoost - Validation F1: 0.9808 ⭐ Test: F1=0.9831, AUC=0.9997
+                "chap84": "xgboost",   # XGBoost - Validation F1: 0.9891 ⭐ Test: F1=0.9887, AUC=0.9997
+                "chap85": "xgboost"    # XGBoost - Validation F1: 0.9808 ⭐ Test: F1=0.9808, AUC=0.9993
             }
             
             best_model = model_priority.get(self.chapter, "lightgbm")

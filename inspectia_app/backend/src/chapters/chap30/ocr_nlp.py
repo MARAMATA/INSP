@@ -2,11 +2,11 @@
 """
 Interface OCR/NLP pour le Chapitre 30 - Produits pharmaceutiques
 Intégration complète avec le nouveau système ML-RL avancé
-- Modèle ML: XGBoost - Validation F1: 0.9821 ⭐ (critère de sélection)
-  * Test: F1=0.9811, AUC=0.9997, Precision=0.9876, Recall=0.9746
+- Modèle ML: CatBoost - Validation F1: 0.9808 ⭐ (critère de sélection)
+  * Test: F1=0.9831, AUC=0.9997, Precision=0.9917, Recall=0.9746
 - Système RL: Epsilon-greedy, UCB, Hybrid
-- Features business optimisées par corrélation (52 features)
-- Configuration EXCEPTIONNELLE avec seuils optimaux (0.550)
+- Features business optimisées par corrélation (43 features)
+- Configuration EXCEPTIONNELLE avec seuils optimaux (0.200)
 """
 
 from __future__ import annotations
@@ -59,18 +59,18 @@ def predict_from_uploads(
         # Enrichir avec les informations spécifiques au chapitre 30
         result.update({
             "chapter_name": "Produits pharmaceutiques",
-            "best_model": "xgboost",
+            "best_model": "catboost",
             "model_performance": {
-                "validation_f1": 0.9821,
-                "f1_score": 0.9811,
+                "validation_f1": 0.9808,
+                "f1_score": 0.9831,
                 "auc": 0.9997,
-                "precision": 0.9876,
+                "precision": 0.9917,
                 "recall": 0.9746,
-                "accuracy": 0.9997
+                "accuracy": 0.9831
             },
-            "optimal_threshold": 0.55,
+            "optimal_threshold": 0.20,
             "rl_level": level,
-            "features_count": 52,
+            "features_count": 43,
             "configuration": "EXCEPTIONNELLE",
             "fraud_rate": 19.44,
             "data_size": 25334
@@ -128,7 +128,7 @@ def predict_from_file_with_aggregation(file_path: str, level: str = "basic") -> 
             "file_path": file_path,
             "chapter": "chap30",
             "chapter_name": "Produits pharmaceutiques",
-            "best_model": "xgboost",
+            "best_model": "catboost",
             "file_processing": file_result,
             "prediction": prediction_result,
             "aggregation_info": {
@@ -137,14 +137,14 @@ def predict_from_file_with_aggregation(file_path: str, level: str = "basic") -> 
                 "source_type": file_result.get("source_type", "unknown")
             },
             "model_performance": {
-                "validation_f1": 0.9821,
-                "f1_score": 0.9811,
+                "validation_f1": 0.9808,
+                "f1_score": 0.9831,
                 "auc": 0.9997,
-                "precision": 0.9876,
+                "precision": 0.9917,
                 "recall": 0.9746,
-                "accuracy": 0.9997
+                "accuracy": 0.9831
             },
-            "optimal_threshold": 0.55,
+            "optimal_threshold": 0.20,
             "configuration": "EXCEPTIONNELLE",
             "fraud_rate": 19.44,
             "data_size": 25334
@@ -176,16 +176,16 @@ def predict_from_ocr_data(ocr_data: Dict[str, Any], level: str = "basic") -> Dic
         # Enrichir avec les métadonnées du chapitre 30
         result.update({
             "chapter_name": "Produits pharmaceutiques",
-            "best_model": "xgboost",
+            "best_model": "catboost",
             "prediction": result.get("predicted_fraud", "N/A"),
             "fraud_probability": result.get("fraud_probability", 0),
-            "validation_f1": 0.9821,
-            "f1_score": 0.9811,
+            "validation_f1": 0.9808,
+            "f1_score": 0.9831,
             "auc": 0.9997,
-            "precision": 0.9876,
+            "precision": 0.9917,
             "recall": 0.9746,
-            "accuracy": 0.9997,
-            "features_count": 52,
+            "accuracy": 0.9831,
+            "features_count": 43,
             "specialized_features": [
                 "BUSINESS_GLISSEMENT_COSMETIQUE",
                 "BUSINESS_GLISSEMENT_PAYS_COSMETIQUES",
@@ -207,14 +207,14 @@ def predict_from_ocr_data(ocr_data: Dict[str, Any], level: str = "basic") -> Dic
                 "BUSINESS_AVEC_DPI"
             ],
             "model_performance": {
-                "validation_f1": 0.9821,
-                "f1_score": 0.9811,
+                "validation_f1": 0.9808,
+                "f1_score": 0.9831,
                 "auc": 0.9997,
-                "precision": 0.9876,
+                "precision": 0.9917,
                 "recall": 0.9746,
-                "accuracy": 0.9997
+                "accuracy": 0.9831
             },
-            "optimal_threshold": 0.55,
+            "optimal_threshold": 0.20,
             "fraud_rate": 19.44,
             "data_size": 25334
         })
@@ -245,17 +245,17 @@ def process_document(image_path: str, level: str = "basic") -> Dict[str, Any]:
         if "prediction" in result:
             result["prediction"].update({
                 "chapter_name": "Produits pharmaceutiques",
-                "best_model": "xgboost",
+                "best_model": "catboost",
                 "pharmaceutical_features": True,
                 "model_performance": {
-                    "validation_f1": 0.9821,
-                    "f1_score": 0.9811,
+                    "validation_f1": 0.9808,
+                    "f1_score": 0.9831,
                     "auc": 0.9997,
-                    "precision": 0.9876,
+                    "precision": 0.9917,
                     "recall": 0.9746,
-                    "accuracy": 0.9997
+                    "accuracy": 0.9831
                 },
-                "optimal_threshold": 0.23
+                "optimal_threshold": 0.20
             })
         
         return result
@@ -274,16 +274,16 @@ def get_chapter_info() -> Dict[str, Any]:
         "name": "Produits pharmaceutiques",
         "best_model": get_best_model_for_chapter("chap30"),
         "model_performance": {
-            "validation_f1": 0.9821,
-            "f1_score": 0.9811,
+            "validation_f1": 0.9808,
+            "f1_score": 0.9831,
             "auc": 0.9997,
-            "precision": 0.9876,
+            "precision": 0.9917,
             "recall": 0.9746,
-            "accuracy": 0.9997
+            "accuracy": 0.9831
         },
-        "optimal_threshold": 0.23,
+        "optimal_threshold": 0.20,
         "configuration": "EXCEPTIONNELLE",
-        "features_count": 52,
+        "features_count": 43,
         "fraud_rate": 19.44,
         "data_size": 25334,
         "features": {

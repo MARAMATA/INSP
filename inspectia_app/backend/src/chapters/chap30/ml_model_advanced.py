@@ -231,17 +231,46 @@ class Chap30MLAdvanced:
         return splits
 
     def create_preprocessing_pipeline(self, X):
-        """Créer le pipeline de preprocessing"""
+        """Créer le pipeline de preprocessing avec TOUTES les features importantes"""
         logger.info("🔧 Création du pipeline de preprocessing...")
         
-        # Colonnes numériques
-        numeric_features = []
-        for feature_type, features in self.feature_columns.items():
-            if feature_type in ['numeric', 'fraud_detection', 'business']:
-                numeric_features.extend([col for col in features if col in X.columns])
+        # Toutes les features numériques importantes (inclure toutes les features disponibles)
+        numeric_features = [
+            # Features numériques de base
+            'VALEUR_CAF', 'VALEUR_DOUANE', 'MONTANT_LIQUIDATION', 'POIDS_NET', 'POIDS_NET_KG',
+            'VALEUR_UNITAIRE_KG', 'TAUX_DROITS_PERCENT', 'RATIO_DOUANE_CAF',
+            'NUMERO_ARTICLE', 'PRECISION_UEMOA', 'NOMBRE_COLIS', 'QUANTITE_COMPLEMENT',
+            'VALEUR_UNITAIRE_PAR_KG', 'VALEUR_FOB', 'VALEUR_PAR_COLIS', 'POIDS_BRUT',
+            'ASSURANCE', 'FRET', 'TAUX', 'MONTANT', 'BASE_TAXABLE', 'NOMBRE_CONTENEUR',
+            
+            # Features de détection de fraude avancée
+            'BIENAYME_CHEBYCHEV_SCORE', 'TEI_CALCULE', 'MIRROR_TEI_SCORE',
+            'MIRROR_TEI_DEVIATION', 'SPECTRAL_CLUSTER_SCORE', 'HIERARCHICAL_CLUSTER_SCORE',
+            'ADMIN_VALUES_SCORE', 'ADMIN_VALUES_DEVIATION', 'COMPOSITE_FRAUD_SCORE', 'RATIO_POIDS_VALEUR',
+            
+            # Features business (toutes les features BUSINESS_)
+            'BUSINESS_GLISSEMENT_COSMETIQUE', 'BUSINESS_GLISSEMENT_PAYS_COSMETIQUES',
+            'BUSINESS_GLISSEMENT_RATIO_SUSPECT', 'BUSINESS_RISK_PAYS_HIGH',
+            'BUSINESS_ORIGINE_DIFF_PROVENANCE', 'BUSINESS_REGIME_PREFERENTIEL',
+            'BUSINESS_REGIME_NORMAL', 'BUSINESS_VALEUR_ELEVEE', 'BUSINESS_VALEUR_EXCEPTIONNELLE',
+            'BUSINESS_POIDS_ELEVE', 'BUSINESS_DROITS_ELEVES', 'BUSINESS_RATIO_LIQUIDATION_CAF',
+            'BUSINESS_RATIO_DOUANE_CAF', 'BUSINESS_IS_MEDICAMENT', 'BUSINESS_IS_ANTIPALUDEEN',
+            'BUSINESS_IS_PRECISION_UEMOA', 'BUSINESS_ARTICLES_MULTIPLES', 'BUSINESS_AVEC_DPI'
+        ]
         
-        # Colonnes catégorielles
-        categorical_features = [col for col in self.feature_columns['categorical'] if col in X.columns]
+        # Features catégorielles importantes
+        categorical_features = [
+            'CODE_PRODUIT_STR', 'PAYS_ORIGINE_STR', 'PAYS_PROVENANCE_STR', 'BUREAU',
+            'REGIME_FISCAL', 'NUMERO_ARTICLE_STR', 'PRECISION_UEMOA_STR', 'DATE_DECLARATION_STR',
+            'CODE_SH', 'LIBELLE_TARIF', 'DESCRIPTION_COMMERCIALE', 'CATEGORIE_PRODUIT',
+            'ALERTE_MOTS_CLES', 'DESTINATION', 'BUREAU_FRONTIERE', 'TYPE_REGIME',
+            'REGIME_DOUANIER', 'REGIME_FISCAL_CODE', 'STATUT_BAE', 'CODE_TAXE',
+            'LIBELLE_TAXE', 'NOM_NAVIRE', 'DATE_ARRIVEE', 'DATE_EMBARQUEMENT'
+        ]
+        
+        # Filtrer les features qui existent dans les données
+        numeric_features = [col for col in numeric_features if col in X.columns]
+        categorical_features = [col for col in categorical_features if col in X.columns]
         
         # Pipeline de preprocessing
         numeric_transformer = Pipeline(steps=[
@@ -262,6 +291,8 @@ class Chap30MLAdvanced:
         )
         
         logger.info(f"✅ Pipeline créé: {len(numeric_features)} numériques, {len(categorical_features)} catégorielles")
+        logger.info(f"   Features numériques: {numeric_features[:10]}..." if len(numeric_features) > 10 else f"   Features numériques: {numeric_features}")
+        logger.info(f"   Features catégorielles: {categorical_features[:5]}..." if len(categorical_features) > 5 else f"   Features catégorielles: {categorical_features}")
         
         return preprocessor
 
@@ -343,7 +374,7 @@ class Chap30MLAdvanced:
         logger.info("📊 Génération des résultats complets...")
         
         # 1. Métriques de comparaison
-        self._plot_metrics_comparison(results)
+        self._plot_metrics_comparison(results, best_model_name)
         
         # 2. Matrices de confusion
         self._plot_confusion_matrices(trained_models, splits, best_model_name)
@@ -362,7 +393,7 @@ class Chap30MLAdvanced:
         
         logger.info("✅ Tous les résultats générés avec succès")
 
-    def _plot_metrics_comparison(self, results):
+    def _plot_metrics_comparison(self, results, best_model_name):
         """Générer les graphiques de comparaison des métriques"""
         logger.info("📊 Génération des graphiques de métriques...")
         
@@ -410,7 +441,7 @@ class Chap30MLAdvanced:
         plt.close()
         
         # Graphique du meilleur modèle - AMÉLIORÉ
-        best_model = metrics_df.loc[metrics_df['auc'].idxmax()]
+        best_model = metrics_df.loc[best_model_name]
         
         fig, ax = plt.subplots(figsize=(12, 8))
         
@@ -423,7 +454,7 @@ class Chap30MLAdvanced:
         ax.set_yticklabels(titles, fontsize=12, fontweight='bold')
         ax.set_xlabel('Score', fontsize=14, fontweight='bold')
         ax.set_xlim(0, 1.05)
-        ax.set_title(f'Métriques du Meilleur Modèle - {best_model.name}\nChapitre 30 (Produits Pharmaceutiques)', 
+        ax.set_title(f'Métriques du Meilleur Modèle - {best_model_name}\nChapitre 30 (Produits Pharmaceutiques)', 
                     fontweight='bold', fontsize=16, pad=20)
         
         # Ajouter les valeurs sur les barres
@@ -736,14 +767,43 @@ class Chap30MLAdvanced:
         """Obtenir les noms des features après preprocessing"""
         preprocessor = model.named_steps['preprocessor']
         
-        # Noms des features numériques
-        numeric_features = []
-        for feature_type, features in self.feature_columns.items():
-            if feature_type in ['numeric', 'fraud_detection', 'business']:
-                numeric_features.extend([col for col in features if col in X_sample.columns])
+        # Toutes les features numériques importantes (même liste que dans create_preprocessing_pipeline)
+        numeric_features = [
+            # Features numériques de base
+            'VALEUR_CAF', 'VALEUR_DOUANE', 'MONTANT_LIQUIDATION', 'POIDS_NET', 'POIDS_NET_KG',
+            'VALEUR_UNITAIRE_KG', 'TAUX_DROITS_PERCENT', 'RATIO_DOUANE_CAF',
+            'NUMERO_ARTICLE', 'PRECISION_UEMOA', 'NOMBRE_COLIS', 'QUANTITE_COMPLEMENT',
+            'VALEUR_UNITAIRE_PAR_KG', 'VALEUR_FOB', 'VALEUR_PAR_COLIS', 'POIDS_BRUT',
+            'ASSURANCE', 'FRET', 'TAUX', 'MONTANT', 'BASE_TAXABLE', 'NOMBRE_CONTENEUR',
+            
+            # Features de détection de fraude avancée
+            'BIENAYME_CHEBYCHEV_SCORE', 'TEI_CALCULE', 'MIRROR_TEI_SCORE',
+            'MIRROR_TEI_DEVIATION', 'SPECTRAL_CLUSTER_SCORE', 'HIERARCHICAL_CLUSTER_SCORE',
+            'ADMIN_VALUES_SCORE', 'ADMIN_VALUES_DEVIATION', 'COMPOSITE_FRAUD_SCORE', 'RATIO_POIDS_VALEUR',
+            
+            # Features business (toutes les features BUSINESS_)
+            'BUSINESS_GLISSEMENT_COSMETIQUE', 'BUSINESS_GLISSEMENT_PAYS_COSMETIQUES',
+            'BUSINESS_GLISSEMENT_RATIO_SUSPECT', 'BUSINESS_RISK_PAYS_HIGH',
+            'BUSINESS_ORIGINE_DIFF_PROVENANCE', 'BUSINESS_REGIME_PREFERENTIEL',
+            'BUSINESS_REGIME_NORMAL', 'BUSINESS_VALEUR_ELEVEE', 'BUSINESS_VALEUR_EXCEPTIONNELLE',
+            'BUSINESS_POIDS_ELEVE', 'BUSINESS_DROITS_ELEVES', 'BUSINESS_RATIO_LIQUIDATION_CAF',
+            'BUSINESS_RATIO_DOUANE_CAF', 'BUSINESS_IS_MEDICAMENT', 'BUSINESS_IS_ANTIPALUDEEN',
+            'BUSINESS_IS_PRECISION_UEMOA', 'BUSINESS_ARTICLES_MULTIPLES', 'BUSINESS_AVEC_DPI'
+        ]
         
-        # Noms des features catégorielles après OneHotEncoder
-        categorical_features = [col for col in self.feature_columns['categorical'] if col in X_sample.columns]
+        # Features catégorielles importantes
+        categorical_features = [
+            'CODE_PRODUIT_STR', 'PAYS_ORIGINE_STR', 'PAYS_PROVENANCE_STR', 'BUREAU',
+            'REGIME_FISCAL', 'NUMERO_ARTICLE_STR', 'PRECISION_UEMOA_STR', 'DATE_DECLARATION_STR',
+            'CODE_SH', 'LIBELLE_TARIF', 'DESCRIPTION_COMMERCIALE', 'CATEGORIE_PRODUIT',
+            'ALERTE_MOTS_CLES', 'DESTINATION', 'BUREAU_FRONTIERE', 'TYPE_REGIME',
+            'REGIME_DOUANIER', 'REGIME_FISCAL_CODE', 'STATUT_BAE', 'CODE_TAXE',
+            'LIBELLE_TAXE', 'NOM_NAVIRE', 'DATE_ARRIVEE', 'DATE_EMBARQUEMENT'
+        ]
+        
+        # Filtrer les features qui existent dans les données
+        numeric_features = [col for col in numeric_features if col in X_sample.columns]
+        categorical_features = [col for col in categorical_features if col in X_sample.columns]
         
         # Obtenir les noms des features catégorielles après OneHotEncoder
         categorical_transformer = preprocessor.named_transformers_['cat']

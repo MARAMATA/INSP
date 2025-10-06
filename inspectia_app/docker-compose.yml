@@ -1,0 +1,299 @@
+version: "3.9"
+
+services:
+  # ===========================================
+  # 🗄️ BASE DE DONNÉES POSTGRESQL
+  # ===========================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: inspectia_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: inspectia_db
+      POSTGRES_USER: inspectia_user
+      POSTGRES_PASSWORD: inspectia_pass
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./inspectia_app/backend/database/schema_INSPECT_IA.sql:/docker-entrypoint-initdb.d/01-schema-inspectia.sql:ro
+      - ./inspectia_app/backend/database/populate_database.py:/docker-entrypoint-initdb.d/02-populate.py:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inspectia_user -d inspectia_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - inspectia_network
+
+  # ===========================================
+  # 🤖 MLFLOW - TRACKING DES MODÈLES ML
+  # ===========================================
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.12.1
+    container_name: inspectia_mlflow
+    restart: unless-stopped
+    command: >
+      mlflow server 
+      --host 0.0.0.0 
+      --port 5000 
+      --backend-store-uri postgresql://inspectia_user:inspectia_pass@postgres:5432/inspectia_db
+      --default-artifact-root /mlruns
+      --serve-artifacts
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_artifacts:/mlruns
+    environment:
+      - MLFLOW_BACKEND_STORE_URI=postgresql://inspectia_user:inspectia_pass@postgres:5432/inspectia_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - inspectia_network
+
+  # ===========================================
+  # 🚀 BACKEND API - FASTAPI + ML/RL
+  # ===========================================
+  backend:
+    build:
+      context: ./inspectia_app/backend
+      dockerfile: Dockerfile
+    image: inspectia-backend:latest
+    container_name: inspectia_backend
+    restart: unless-stopped
+    environment:
+      # Configuration de base
+      - PORT=8000
+      - ENVIRONMENT=production
+      
+      # Base de données
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=inspectia_user
+      - DB_PASSWORD=inspectia_pass
+      - DB_NAME=inspectia_db
+      - DATABASE_URL=postgresql+asyncpg://inspectia_user:inspectia_pass@postgres:5432/inspectia_db
+      
+      # MLflow
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - MLFLOW_BACKEND_STORE_URI=postgresql://inspectia_user:inspectia_pass@postgres:5432/inspectia_db
+      
+      # Configuration ML/RL
+      - ML_MODELS_PATH=/app/models
+      - RL_STORE_PATH=/app/rl_store
+      - OCR_MODELS_PATH=/app/ocr_models
+      
+      # Logging
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=json
+      
+      # Performance
+      - WORKERS=4
+      - MAX_REQUESTS=1000
+      - TIMEOUT=30
+    ports:
+      - "8000:8000"
+    volumes:
+      # Volumes pour la persistance des données
+      - backend_logs:/app/logs
+      - backend_results:/app/results
+      - backend_models:/app/models
+      - backend_data:/app/data
+      - backend_rl_store:/app/rl_store
+      - backend_ocr_cache:/app/ocr_cache
+      
+      # Volumes pour le développement (optionnel)
+      - ./inspectia_app/backend:/app:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - inspectia_network
+
+  # ===========================================
+  # 📱 FRONTEND FLUTTER WEB
+  # ===========================================
+  frontend:
+    build:
+      context: ./inspectia_app/inspectia_app_frontend
+      dockerfile: Dockerfile
+    image: inspectia-frontend:latest
+    container_name: inspectia_frontend
+    restart: unless-stopped
+    environment:
+      - BACKEND_URL=http://backend:8000
+      - API_BASE_URL=http://backend:8000
+      - NODE_ENV=production
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - inspectia_network
+
+  # ===========================================
+  # 📊 STREAMLIT DASHBOARD
+  # ===========================================
+  streamlit:
+    build:
+      context: ./inspectia_app
+      dockerfile: Dockerfile.streamlit
+    image: inspectia-streamlit:latest
+    container_name: inspectia_streamlit
+    restart: unless-stopped
+    environment:
+      - BACKEND_URL=http://backend:8000
+      - MLFLOW_URL=http://mlflow:5000
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+    ports:
+      - "8501:8501"
+    volumes:
+      - streamlit_data:/app/data
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - inspectia_network
+
+  # ===========================================
+  # 🔍 REDIS - CACHE ET SESSIONS
+  # ===========================================
+  redis:
+    image: redis:7-alpine
+    container_name: inspectia_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - inspectia_network
+
+  # ===========================================
+  # 📈 MONITORING - PROMETHEUS
+  # ===========================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: inspectia_prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - inspectia_network
+
+  # ===========================================
+  # 📊 GRAFANA - DASHBOARDS
+  # ===========================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: inspectia_grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+    networks:
+      - inspectia_network
+
+  # ===========================================
+  # 🔧 NGINX - REVERSE PROXY
+  # ===========================================
+  nginx:
+    image: nginx:alpine
+    container_name: inspectia_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - frontend
+      - backend
+      - streamlit
+    networks:
+      - inspectia_network
+
+volumes:
+  # Base de données
+  postgres_data:
+    driver: local
+  
+  # MLflow
+  mlflow_artifacts:
+    driver: local
+  
+  # Backend
+  backend_logs:
+    driver: local
+  backend_results:
+    driver: local
+  backend_models:
+    driver: local
+  backend_data:
+    driver: local
+  backend_rl_store:
+    driver: local
+  backend_ocr_cache:
+    driver: local
+  
+  # Streamlit
+  streamlit_data:
+    driver: local
+  
+  # Redis
+  redis_data:
+    driver: local
+  
+  # Monitoring
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  inspectia_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

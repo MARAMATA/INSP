@@ -9,12 +9,12 @@ from shared.ml_retraining_system import get_retraining_system
 
 # Configuration RL adaptée au chapitre 84 (Machines et équipements)
 # Intégration avec XGBoost - Validation F1: 0.9891 ⭐ (critère de sélection)
-# Test: F1=0.9888, AUC=0.9997, Precision=0.9992, Recall=0.9834
-# Seuils optimaux calculés: seuil=0.420, confiance_haute=0.900
+# Test: F1=0.9887, AUC=0.9997, Precision=0.9942, Recall=0.9833
+# Seuils optimaux calculés: seuil=0.200, confiance_haute=0.900
 # 3 niveaux = stratégies différentes optimisées pour les nouveaux modèles
-# - basic   -> epsilon-greedy avec seuils optimaux (0.420)
+# - basic   -> epsilon-greedy avec seuils optimaux (0.200)
 # - advanced-> UCB avec confiance élevée (0.900)
-# - expert  -> hybrid avec seuils optimaux (0.420)
+# - expert  -> hybrid avec seuils optimaux (0.200)
 _MANAGERS = {
     "basic":   AdvancedRLManager(chapter="chap84", epsilon=0.08, strategy="epsilon_greedy"),
     "advanced":AdvancedRLManager(chapter="chap84", epsilon=0.04, strategy="ucb"),

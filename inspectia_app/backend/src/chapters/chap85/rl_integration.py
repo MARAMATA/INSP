@@ -8,13 +8,13 @@ from shared.advanced_reinforcement_learning import AdvancedRLManager
 from shared.ml_retraining_system import get_retraining_system
 
 # Configuration RL adaptée au chapitre 85 (Appareils électriques)
-# Intégration avec XGBoost - Validation F1: 0.9781 ⭐ (critère de sélection)
-# Test: F1=0.9808, AUC=0.9993, Precision=0.9893, Recall=0.9723
-# Seuils optimaux calculés: seuil=0.510, confiance_haute=0.900
+# Intégration avec XGBoost - Validation F1: 0.9808 ⭐ (critère de sélection)
+# Test: F1=0.9808, AUC=0.9993, Precision=0.9894, Recall=0.9723
+# Seuils optimaux calculés: seuil=0.200, confiance_haute=0.900
 # 3 niveaux = stratégies différentes optimisées pour les nouveaux modèles
-# - basic   -> epsilon-greedy avec seuils optimaux (0.510)
+# - basic   -> epsilon-greedy avec seuils optimaux (0.200)
 # - advanced-> UCB avec confiance élevée (0.900)
-# - expert  -> hybrid avec seuils optimaux (0.510)
+# - expert  -> hybrid avec seuils optimaux (0.200)
 _MANAGERS = {
     "basic":   AdvancedRLManager(chapter="chap85", epsilon=0.09, strategy="epsilon_greedy"),
     "advanced":AdvancedRLManager(chapter="chap85", epsilon=0.04, strategy="ucb"),

@@ -16,13 +16,13 @@ void main() {
       final config = data['config'];
 
       // Vérifier les nouvelles métriques
-      expect(config['f1_score'], 0.965);
-      expect(config['auc_score'], 0.994);
-      expect(config['precision'], 0.99);
-      expect(config['recall'], 0.942);
-      expect(config['accuracy'], 0.965);
+      expect(config['f1_score'], 0.9808);
+      expect(config['auc_score'], 0.9993);
+      expect(config['precision'], 0.9894);
+      expect(config['recall'], 0.9723);
+      expect(config['accuracy'], 0.9808);
       expect(config['fraud_rate'], 19.2);
-      expect(config['features_count'], 23);
+      expect(config['features_count'], 43);
       expect(config['brier_score'], 0.003);
       expect(config['ece'], 0.0006);
       expect(config['bss'], 0.9891);
@@ -40,9 +40,9 @@ void main() {
       final thresholds = data['thresholds'];
 
       // Vérifier les nouveaux seuils
-      expect(thresholds['conforme'], 0.192);
-      expect(thresholds['fraude'], 0.557);
-      expect(thresholds['optimal_threshold'], 0.5);
+      expect(thresholds['conforme'], 0.15);
+      expect(thresholds['fraude'], 0.25);
+      expect(thresholds['optimal_threshold'], 0.2);
 
       print('✅ Les seuils de décision du chapitre 85 sont corrects !');
     });
@@ -69,8 +69,8 @@ void main() {
       final pipelineResult = data['pipeline_result'];
 
       // Vérifier que la prédiction utilise les bonnes métriques
-      expect(pipelineResult['chapter_info']['f1_score'], 0.965);
-      expect(pipelineResult['chapter_info']['auc_score'], 0.994);
+      expect(pipelineResult['chapter_info']['f1_score'], 0.9808);
+      expect(pipelineResult['chapter_info']['auc_score'], 0.9993);
       expect(pipelineResult['chapter_info']['fraud_rate'], 19.2);
       expect(pipelineResult['calibration_metrics']['brier_score'], 0.003);
       expect(pipelineResult['calibration_metrics']['ece'], 0.0006);

@@ -1,5 +1,6 @@
 version: "3.9"
 services:
+  # Base de données PostgreSQL
   db:
     image: postgres:15
     container_name: inspectia_db
@@ -12,7 +13,13 @@ services:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inspectia_user -d inspectia_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # MLflow pour le suivi des modèles ML
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.12.1
     container_name: inspectia_mlflow
@@ -21,13 +28,15 @@ services:
       - "5000:5000"
     volumes:
       - mlruns:/mlruns
+    restart: unless-stopped
 
+  # Backend API FastAPI
   api:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
     image: inspectia-backend:latest
     container_name: inspectia_api
-    tty: true
-    stdin_open: true
     environment:
       - PORT=8000
       - DB_HOST=db
@@ -36,14 +45,60 @@ services:
       - DB_PASSWORD=inspectia_pass
       - DB_NAME=inspectia_db
       - DATABASE_URL=postgresql+asyncpg://inspectia_user:inspectia_pass@db:5432/inspectia_db
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
     ports:
       - "8000:8000"
-    command: ["python", "-m", "backend.src.main"]
     volumes:
-      - .:/app
+      - ./logs:/app/logs
+      - ./results:/app/results
+      - ./data:/app/data
+      - ./models:/app/models
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend Flutter Web
+  frontend:
+    build:
+      context: ../inspectia_app_frontend
+      dockerfile: Dockerfile
+    image: inspectia-frontend:latest
+    container_name: inspectia_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+    environment:
+      - BACKEND_URL=http://api:8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Application Streamlit (optionnelle)
+  streamlit:
+    build:
+      context: ..
+      dockerfile: Dockerfile.streamlit
+    image: inspectia-streamlit:latest
+    container_name: inspectia_streamlit
+    ports:
+      - "8501:8501"
+    depends_on:
+      - api
+    restart: unless-stopped
+    environment:
+      - BACKEND_URL=http://api:8000
 
 volumes:
   db_data:

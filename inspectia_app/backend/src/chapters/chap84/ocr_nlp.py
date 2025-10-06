@@ -3,10 +3,10 @@
 Interface OCR/NLP pour le Chapitre 84 - Machines et appareils mécaniques
 Intégration complète avec le nouveau système ML-RL avancé
 - Modèle ML: XGBoost - Validation F1: 0.9891 ⭐ (critère de sélection)
-  * Test: F1=0.9888, AUC=0.9997, Precision=0.9992, Recall=0.9834
+  * Test: F1=0.9887, AUC=0.9997, Precision=0.9942, Recall=0.9833
 - Système RL: Epsilon-greedy, UCB, Hybrid
-- Features business optimisées par corrélation (54 features)
-- Configuration EXCEPTIONNELLE avec seuils optimaux (0.420)
+- Features business optimisées par corrélation (43 features)
+- Configuration EXCEPTIONNELLE avec seuils optimaux (0.200)
 """
 
 from __future__ import annotations
@@ -62,16 +62,16 @@ def predict_from_uploads(
             "best_model": "xgboost",
             "model_performance": {
                 "validation_f1": 0.9891,
-                "f1_score": 0.9888,
+                "f1_score": 0.9887,
                 "auc": 0.9997,
-                "precision": 0.9992,
-                "recall": 0.9834,
-                "accuracy": 0.9997
+                "precision": 0.9942,
+                "recall": 0.9833,
+                "accuracy": 0.9887
             },
-            "optimal_threshold": 0.42,
+            "optimal_threshold": 0.20,
             "rl_level": level,
             "mechanical_features": True,
-            "features_count": 54,
+            "features_count": 43,
             "configuration": "EXCEPTIONNELLE",
             "fraud_rate": 26.80,
             "data_size": 264494
@@ -139,13 +139,13 @@ def predict_from_file_with_aggregation(file_path: str, level: str = "basic") -> 
             },
             "model_performance": {
                 "validation_f1": 0.9891,
-                "f1_score": 0.9888,
+                "f1_score": 0.9887,
                 "auc": 0.9997,
-                "precision": 0.9992,
-                "recall": 0.9834,
-                "accuracy": 0.9997
+                "precision": 0.9942,
+                "recall": 0.9833,
+                "accuracy": 0.9887
             },
-            "optimal_threshold": 0.42,
+            "optimal_threshold": 0.20,
             "configuration": "EXCEPTIONNELLE",
             "fraud_rate": 26.80,
             "data_size": 264494
@@ -181,12 +181,12 @@ def predict_from_ocr_data(ocr_data: Dict[str, Any], level: str = "basic") -> Dic
             "prediction": result.get("predicted_fraud", "N/A"),
             "fraud_probability": result.get("fraud_probability", 0),
             "validation_f1": 0.9891,
-            "f1_score": 0.9888,
+            "f1_score": 0.9887,
             "auc": 0.9997,
-            "precision": 0.9992,
-            "recall": 0.9834,
-            "accuracy": 0.9997,
-            "features_count": 54,
+            "precision": 0.9942,
+            "recall": 0.9833,
+            "accuracy": 0.9887,
+            "features_count": 43,
             "specialized_features": [
                 "BUSINESS_GLISSEMENT_MACHINE_BUREAU",
                 "BUSINESS_GLISSEMENT_PAYS_MACHINES",
@@ -209,13 +209,13 @@ def predict_from_ocr_data(ocr_data: Dict[str, Any], level: str = "basic") -> Dic
             ],
             "model_performance": {
                 "validation_f1": 0.9891,
-                "f1_score": 0.9888,
+                "f1_score": 0.9887,
                 "auc": 0.9997,
-                "precision": 0.9992,
-                "recall": 0.9834,
-                "accuracy": 0.9997
+                "precision": 0.9942,
+                "recall": 0.9833,
+                "accuracy": 0.9887
             },
-            "optimal_threshold": 0.42,
+            "optimal_threshold": 0.20,
             "fraud_rate": 26.80,
             "data_size": 264494
         })
@@ -250,13 +250,13 @@ def process_document(image_path: str, level: str = "basic") -> Dict[str, Any]:
                 "mechanical_features": True,
                 "model_performance": {
                     "validation_f1": 0.9891,
-                    "f1_score": 0.9888,
+                    "f1_score": 0.9887,
                     "auc": 0.9997,
-                    "precision": 0.9992,
-                    "recall": 0.9834,
-                    "accuracy": 0.9997
+                    "precision": 0.9942,
+                    "recall": 0.9833,
+                    "accuracy": 0.9887
                 },
-                "optimal_threshold": 0.22
+                "optimal_threshold": 0.20
             })
         
         return result
@@ -276,15 +276,15 @@ def get_chapter_info() -> Dict[str, Any]:
         "best_model": get_best_model_for_chapter("chap84"),
         "model_performance": {
             "validation_f1": 0.9891,
-            "f1_score": 0.9888,
+            "f1_score": 0.9887,
             "auc": 0.9997,
-            "precision": 0.9992,
-            "recall": 0.9834,
-            "accuracy": 0.9997
+            "precision": 0.9942,
+            "recall": 0.9833,
+            "accuracy": 0.9887
         },
-        "optimal_threshold": 0.22,
+        "optimal_threshold": 0.20,
         "configuration": "EXCEPTIONNELLE",
-        "features_count": 54,
+        "features_count": 43,
         "fraud_rate": 26.80,
         "data_size": 264494,
         "features": {
