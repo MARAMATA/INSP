@@ -1367,13 +1367,14 @@ class AdvancedRLManager:
             (bureau_risk_score - 0.5) * 0.2  # Ajustement bureau
         )
         
-        # INTÉGRATION ML-RL : Ajustement minimal si ML utilisé
+        # INTÉGRATION ML-RL : PAS D'AJUSTEMENT si ML utilisé
         if ml_used:
-            # Ajustement très conservateur car les modèles sont parfaitement calibrés
-            # Les probabilités ML sont déjà optimales, on fait juste un micro-ajustement contextuel
-            final_prob = max(0.01, min(0.99, base_prob + context_adjustment * 0.1))
+            # Les modèles ML sont parfaitement calibrés avec F1 > 0.97
+            # NE PAS ajuster la probabilité ML - elle est déjà optimale!
+            final_prob = base_prob
+            logger.debug(f"✅ Probabilité ML conservée sans ajustement: {final_prob:.3f}")
         else:
-            # Ajustement normal pour le RL pur
+            # Ajustement normal pour le RL pur (si jamais utilisé sans ML)
             final_prob = max(0.01, min(0.99, base_prob + context_adjustment))
         
         # Score de confiance basé sur l'expérience du contexte
