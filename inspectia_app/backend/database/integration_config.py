@@ -49,23 +49,23 @@ class IntegrationConfig:
             'chapters': {
                 'chap30': {
                     'name': 'Produits pharmaceutiques',
-                    'best_model': 'xgboost',
-                    'optimal_threshold': 0.23,
-                    'features_count': 52,
+                    'best_model': 'catboost',
+                    'optimal_threshold': 0.20,
+                    'features_count': 43,
                     'business_features_count': 15
                 },
                 'chap84': {
                     'name': 'Machines et appareils mécaniques',
                     'best_model': 'xgboost',
-                    'optimal_threshold': 0.22,
-                    'features_count': 54,
+                    'optimal_threshold': 0.20,
+                    'features_count': 43,
                     'business_features_count': 18
                 },
                 'chap85': {
                     'name': 'Machines et appareils électriques',
                     'best_model': 'lightgbm',
-                    'optimal_threshold': 0.22,
-                    'features_count': 54,
+                    'optimal_threshold': 0.20,
+                    'features_count': 43,
                     'business_features_count': 16
                 }
             },

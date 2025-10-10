@@ -1,0 +1,198 @@
+# =============================================================================
+# DOCKER COMPOSE TEST - ENVIRONNEMENT DE TEST
+# =============================================================================
+
+version: "3.9"
+
+services:
+  # Base de données de test
+  postgres-test:
+    image: postgres:15
+    container_name: inspectia_db_test
+    environment:
+      POSTGRES_DB: inspectia_db_test
+      POSTGRES_USER: inspectia_user
+      POSTGRES_PASSWORD: inspectia_pass
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+      - ./inspectia_app/backend/database/schema_INSPECT_IA.sql:/docker-entrypoint-initdb.d/01-schema-inspectia.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inspectia_user -d inspectia_db_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis de test
+  redis-test:
+    image: redis:7-alpine
+    container_name: inspectia_redis_test
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_test_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend de test
+  backend-test:
+    build:
+      context: ./inspectia_app/backend
+      dockerfile: Dockerfile
+    container_name: inspectia_backend_test
+    environment:
+      - ENVIRONMENT=testing
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - DB_HOST=postgres-test
+      - DB_PORT=5432
+      - DB_NAME=inspectia_db_test
+      - DB_USER=inspectia_user
+      - DB_PASSWORD=inspectia_pass
+      - DATABASE_URL=postgresql+asyncpg://inspectia_user:inspectia_pass@postgres-test:5432/inspectia_db_test
+      - REDIS_URL=redis://redis-test:6379
+      - MLFLOW_TRACKING_URI=http://mlflow-test:5000
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./inspectia_app/backend:/app:ro
+      - backend_test_logs:/app/logs
+      - backend_test_results:/app/results
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MLflow de test
+  mlflow-test:
+    image: ghcr.io/mlflow/mlflow:v2.12.1
+    container_name: inspectia_mlflow_test
+    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:///mlflow.db --default-artifact-root /mlruns
+    ports:
+      - "5001:5000"
+    volumes:
+      - mlflow_test_data:/mlruns
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Tests unitaires
+  test-runner:
+    build:
+      context: ./inspectia_app/backend
+      dockerfile: Dockerfile
+    container_name: inspectia_test_runner
+    environment:
+      - ENVIRONMENT=testing
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - DB_HOST=postgres-test
+      - DB_PORT=5432
+      - DB_NAME=inspectia_db_test
+      - DB_USER=inspectia_user
+      - DB_PASSWORD=inspectia_pass
+      - DATABASE_URL=postgresql+asyncpg://inspectia_user:inspectia_pass@postgres-test:5432/inspectia_db_test
+      - REDIS_URL=redis://redis-test:6379
+      - MLFLOW_TRACKING_URI=http://mlflow-test:5000
+    volumes:
+      - ./inspectia_app/backend:/app:ro
+      - test_results:/app/test_results
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+      mlflow-test:
+        condition: service_healthy
+    command: ["python", "-m", "pytest", "tests/", "-v", "--tb=short", "--cov=src", "--cov-report=html", "--cov-report=xml"]
+    profiles:
+      - testing
+
+  # Tests d'intégration
+  integration-tests:
+    build:
+      context: ./inspectia_app/backend
+      dockerfile: Dockerfile
+    container_name: inspectia_integration_tests
+    environment:
+      - ENVIRONMENT=testing
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - DB_HOST=postgres-test
+      - DB_PORT=5432
+      - DB_NAME=inspectia_db_test
+      - DB_USER=inspectia_user
+      - DB_PASSWORD=inspectia_pass
+      - DATABASE_URL=postgresql+asyncpg://inspectia_user:inspectia_pass@postgres-test:5432/inspectia_db_test
+      - REDIS_URL=redis://redis-test:6379
+      - MLFLOW_TRACKING_URI=http://mlflow-test:5000
+    volumes:
+      - ./inspectia_app/backend:/app:ro
+      - test_results:/app/test_results
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+      mlflow-test:
+        condition: service_healthy
+      backend-test:
+        condition: service_healthy
+    command: ["python", "-m", "pytest", "tests/integration/", "-v", "--tb=short"]
+    profiles:
+      - testing
+
+  # Tests de performance
+  performance-tests:
+    build:
+      context: ./inspectia_app/backend
+      dockerfile: Dockerfile
+    container_name: inspectia_performance_tests
+    environment:
+      - ENVIRONMENT=testing
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - DB_HOST=postgres-test
+      - DB_PORT=5432
+      - DB_NAME=inspectia_db_test
+      - DB_USER=inspectia_user
+      - DB_PASSWORD=inspectia_pass
+      - DATABASE_URL=postgresql+asyncpg://inspectia_user:inspectia_pass@postgres-test:5432/inspectia_db_test
+      - REDIS_URL=redis://redis-test:6379
+      - MLFLOW_TRACKING_URI=http://mlflow-test:5000
+    volumes:
+      - ./inspectia_app/backend:/app:ro
+      - test_results:/app/test_results
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+      mlflow-test:
+        condition: service_healthy
+      backend-test:
+        condition: service_healthy
+    command: ["python", "-m", "pytest", "tests/performance/", "-v", "--tb=short"]
+    profiles:
+      - testing
+
+volumes:
+  postgres_test_data:
+  redis_test_data:
+  mlflow_test_data:
+  backend_test_logs:
+  backend_test_results:
+  test_results:

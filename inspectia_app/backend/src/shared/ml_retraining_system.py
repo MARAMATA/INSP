@@ -297,9 +297,10 @@ class MLRetrainingSystem:
                 # Ajouter les features business spécifiques au chapitre
                 if chapter == "chap30":
                     row.update({
-                        "BUSINESS_GLISSEMENT_COSMETIQUE": context.get("BUSINESS_GLISSEMENT_COSMETIQUE", 0),
-                        "BUSINESS_IS_MEDICAMENT": context.get("BUSINESS_IS_MEDICAMENT", 0),
-                        "BUSINESS_IS_ANTIPALUDEEN": context.get("BUSINESS_IS_ANTIPALUDEEN", 0)
+                        "BUSINESS_GLISSEMENT_TARIFAIRE": context.get("BUSINESS_GLISSEMENT_TARIFAIRE", 0),
+                        "BUSINESS_GLISSEMENT_DESCRIPTION": context.get("BUSINESS_GLISSEMENT_DESCRIPTION", 0),
+                        "BUSINESS_IS_ANTIPALUDEEN": context.get("BUSINESS_IS_ANTIPALUDEEN", 0),
+                        "BUSINESS_VALEUR_UNITAIRE_SUSPECTE": context.get("BUSINESS_VALEUR_UNITAIRE_SUSPECTE", 0)
                     })
                 elif chapter == "chap84":
                     row.update({

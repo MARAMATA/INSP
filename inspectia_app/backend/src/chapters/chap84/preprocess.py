@@ -29,8 +29,8 @@ class Chap84PreprocessorComprehensive:
         # Colonnes pour créer DECLARATION_ID
         self.declaration_id_cols = ['ANNEE', 'BUREAU', 'NUMERO_DECLARATION']
         
-        # Initialiser le détecteur de fraude avancé
-        self.fraud_detector = AdvancedFraudDetection()
+        # Initialiser le détecteur de fraude avancé avec le chapitre
+        self.fraud_detector = AdvancedFraudDetection(chapter='chap84')
         
         logger.info("✅ Preprocessor COMPLET initialisé avec toutes les règles métiers douanières")
     

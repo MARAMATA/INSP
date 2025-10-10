@@ -125,7 +125,7 @@ AUTHORIZED_CHAPTERS = ["chap30", "chap84", "chap85"]
 
 # Configuration RL centralisée
 RL_CONFIGS = {
-    "chap30": {"epsilon": 0.2, "strategy": "hybrid", "optimal_threshold": 0.20},
+    "chap30": {"epsilon": 0.2, "strategy": "hybrid", "optimal_threshold": 0.35},
     "chap84": {"epsilon": 0.2, "strategy": "hybrid", "optimal_threshold": 0.25},
     "chap85": {"epsilon": 0.2, "strategy": "hybrid", "optimal_threshold": 0.20}
 }
@@ -147,17 +147,17 @@ async def save_declaration_to_postgresql(declaration_id: str, chapter_id: str, d
             "file_name": filename,
             "file_type": clean_data.get('file_type', 'csv'),
             "source_type": 'api',
-            "poids_net_kg": clean_data.get('POIDS_NET_KG'),
+            "poids_net_kg": clean_data.get('POIDS_NET_KG') or clean_data.get('POIDS_NET'),
             "nombre_colis": clean_data.get('NOMBRE_COLIS'),
             "quantite_complement": clean_data.get('QUANTITE_COMPLEMENT'),
             "taux_droits_percent": clean_data.get('TAUX_DROITS_PERCENT'),
             "valeur_caf": clean_data.get('VALEUR_CAF'),
             "valeur_unitaire_kg": clean_data.get('VALEUR_UNITAIRE_KG'),
             "ratio_douane_caf": clean_data.get('RATIO_DOUANE_CAF'),
-            "code_sh_complet": clean_data.get('CODE_SH_COMPLET'),
-            "code_pays_origine": clean_data.get('CODE_PAYS_ORIGINE'),
+            "code_sh_complet": clean_data.get('CODE_SH_COMPLET') or clean_data.get('CODE_PRODUIT_STR'),
+            "code_pays_origine": clean_data.get('CODE_PAYS_ORIGINE') or clean_data.get('PAYS_ORIGINE_STR'),
             "code_pays_provenance": clean_data.get('CODE_PAYS_PROVENANCE'),
-            "regime_complet": clean_data.get('REGIME_COMPLET'),
+            "regime_complet": clean_data.get('REGIME_COMPLET') or clean_data.get('REGIME'),
             "statut_bae": clean_data.get('STATUT_BAE'),
             "type_regime": clean_data.get('TYPE_REGIME'),
             "regime_douanier": clean_data.get('REGIME_DOUANIER'),
@@ -174,17 +174,17 @@ async def save_declaration_to_postgresql(declaration_id: str, chapter_id: str, d
             "ocr_confidence": clean_data.get('OCR_CONFIDENCE', 1.0)
         }
         
-        # Sauvegarder avec execute_postgresql_query
+        # Sauvegarder avec execute_postgresql_query (UPSERT pour éviter les doublons)
         query = """
-        INSERT INTO declarations (
-            declaration_id, chapter_id, file_name, file_type, source_type,
+            INSERT INTO declarations (
+                declaration_id, chapter_id, file_name, file_type, source_type,
             poids_net_kg, nombre_colis, quantite_complement, taux_droits_percent,
             valeur_caf, valeur_unitaire_kg, ratio_douane_caf, code_sh_complet,
             code_pays_origine, code_pays_provenance, regime_complet, statut_bae,
             type_regime, regime_douanier, regime_fiscal, code_produit_str,
             pays_origine_str, pays_provenance_str, numero_article, precision_uemoa,
             extraction_status, validation_status, processing_notes, raw_data, ocr_confidence
-        ) VALUES (
+            ) VALUES (
             %(declaration_id)s, %(chapter_id)s, %(file_name)s, %(file_type)s, %(source_type)s,
             %(poids_net_kg)s, %(nombre_colis)s, %(quantite_complement)s, %(taux_droits_percent)s,
             %(valeur_caf)s, %(valeur_unitaire_kg)s, %(ratio_douane_caf)s, %(code_sh_complet)s,
@@ -193,6 +193,37 @@ async def save_declaration_to_postgresql(declaration_id: str, chapter_id: str, d
             %(pays_origine_str)s, %(pays_provenance_str)s, %(numero_article)s, %(precision_uemoa)s,
             %(extraction_status)s, %(validation_status)s, %(processing_notes)s, %(raw_data)s, %(ocr_confidence)s
         )
+        ON CONFLICT (declaration_id) DO UPDATE SET
+            chapter_id = EXCLUDED.chapter_id,
+            file_name = EXCLUDED.file_name,
+            file_type = EXCLUDED.file_type,
+            source_type = EXCLUDED.source_type,
+            poids_net_kg = EXCLUDED.poids_net_kg,
+            nombre_colis = EXCLUDED.nombre_colis,
+            quantite_complement = EXCLUDED.quantite_complement,
+            taux_droits_percent = EXCLUDED.taux_droits_percent,
+            valeur_caf = EXCLUDED.valeur_caf,
+            valeur_unitaire_kg = EXCLUDED.valeur_unitaire_kg,
+            ratio_douane_caf = EXCLUDED.ratio_douane_caf,
+            code_sh_complet = EXCLUDED.code_sh_complet,
+            code_pays_origine = EXCLUDED.code_pays_origine,
+            code_pays_provenance = EXCLUDED.code_pays_provenance,
+            regime_complet = EXCLUDED.regime_complet,
+            statut_bae = EXCLUDED.statut_bae,
+            type_regime = EXCLUDED.type_regime,
+            regime_douanier = EXCLUDED.regime_douanier,
+            regime_fiscal = EXCLUDED.regime_fiscal,
+            code_produit_str = EXCLUDED.code_produit_str,
+            pays_origine_str = EXCLUDED.pays_origine_str,
+            pays_provenance_str = EXCLUDED.pays_provenance_str,
+            numero_article = EXCLUDED.numero_article,
+            precision_uemoa = EXCLUDED.precision_uemoa,
+            extraction_status = EXCLUDED.extraction_status,
+            validation_status = EXCLUDED.validation_status,
+            processing_notes = EXCLUDED.processing_notes,
+            raw_data = EXCLUDED.raw_data,
+            ocr_confidence = EXCLUDED.ocr_confidence,
+            updated_at = CURRENT_TIMESTAMP
         """
         
         execute_postgresql_query(query, declaration_data, fetch=False)
@@ -222,18 +253,23 @@ async def save_prediction_to_postgresql(declaration_id: str, chapter_id: str, pr
             "risk_analysis": json.dumps(prediction_data.get('risk_analysis', {})),
             "model_version": prediction_data.get('model_version', '1.0'),
             "processing_timestamp": datetime.now().isoformat(),
-            "threshold_used": prediction_data.get('threshold_used', 0.5),
+            "threshold_used": prediction_data.get('threshold_used', load_decision_thresholds(chapter_id).get('optimal_threshold', 0.2)),
             "feature_importance": json.dumps(prediction_data.get('feature_importance', {})),
             "explanation": prediction_data.get('explanation', '')
         }
         
-        # Sauvegarder avec execute_postgresql_query
+        # Sauvegarder avec execute_postgresql_query (supprimer les anciennes prédictions puis insérer)
+        # D'abord supprimer les prédictions existantes pour cette déclaration
+        delete_query = "DELETE FROM predictions WHERE declaration_id = %(declaration_id)s"
+        execute_postgresql_query(delete_query, {"declaration_id": declaration_id}, fetch=False)
+        
+        # Puis insérer la nouvelle prédiction
         query = """
-        INSERT INTO predictions (
+            INSERT INTO predictions (
             declaration_id, chapter_id, predicted_fraud, fraud_probability, confidence_score,
             decision, ml_integration_used, decision_source, context_features, risk_analysis,
             model_version, processing_timestamp, threshold_used, feature_importance, explanation
-        ) VALUES (
+            ) VALUES (
             %(declaration_id)s, %(chapter_id)s, %(predicted_fraud)s, %(fraud_probability)s, %(confidence_score)s,
             %(decision)s, %(ml_integration_used)s, %(decision_source)s, %(context_features)s, %(risk_analysis)s,
             %(model_version)s, %(processing_timestamp)s, %(threshold_used)s, %(feature_importance)s, %(explanation)s
@@ -325,9 +361,12 @@ async def predict(chapter: str, file: UploadFile = File(...)):
         # Utiliser le pipeline OCR pour la prédiction avec agrégation
         pipeline = AdvancedOCRPipeline()
         
-        # Si c'est un CSV avec agrégation, traiter toutes les déclarations
+        # Si c'est un CSV, traiter toutes les déclarations (même une seule)
         metadata = result.get("metadata", {})
-        if metadata.get("source_type") == "csv" and metadata.get("total_declarations", 1) > 1:
+        logger.info(f"🔍 DEBUG: metadata={metadata}")
+        logger.info(f"🔍 DEBUG: source_type={metadata.get('source_type')}")
+        if metadata.get("source_type") == "csv":
+            logger.info(f"🔍 DEBUG: Entrée dans la branche CSV")
             # Utiliser les données déjà agrégées depuis process_declaration_file
             all_declarations = metadata.get("all_extracted_data", [])
             total_declarations = metadata.get("total_declarations", 1)
@@ -418,7 +457,7 @@ async def predict(chapter: str, file: UploadFile = File(...)):
             "aggregation_info": {
                 "declaration_id": _get_valid_declaration_id(extracted_data),
                 "total_declarations": metadata.get("total_declarations", 1),
-                "aggregation_applied": metadata.get("source_type") == "csv" and metadata.get("total_declarations", 1) > 1
+                "aggregation_applied": metadata.get("source_type") == "csv"
             },
             "extracted_data": extracted_data
         }
@@ -1037,11 +1076,11 @@ async def get_chapter_features(chapter: str):
         # Features business spécifiques par chapitre
         business_features = {
             "chap30": [
-                "BUSINESS_GLISSEMENT_COSMETIQUE",
-                "BUSINESS_GLISSEMENT_PAYS_COSMETIQUES", 
+                "BUSINESS_GLISSEMENT_TARIFAIRE",
+                "BUSINESS_GLISSEMENT_DESCRIPTION", 
                 "BUSINESS_GLISSEMENT_RATIO_SUSPECT",
-                "BUSINESS_IS_MEDICAMENT",
-                "BUSINESS_IS_ANTIPALUDEEN"
+                "BUSINESS_IS_ANTIPALUDEEN",
+                "BUSINESS_VALEUR_UNITAIRE_SUSPECTE"
             ],
             "chap84": [
                 "BUSINESS_GLISSEMENT_MACHINE",
@@ -1340,7 +1379,7 @@ async def get_decision_thresholds(chapter: str):
         
         # Ajouter les informations sur le meilleur modèle
         best_models = {
-            "chap30": "CatBoost",
+            "chap30": "XGBoost",
             "chap84": "XGBoost", 
             "chap85": "XGBoost"
         }
@@ -2019,14 +2058,14 @@ async def get_system_status():
         
         # Meilleurs modèles par chapitre
         best_models = {
-            "chap30": "CatBoost",
+            "chap30": "XGBoost",
             "chap84": "XGBoost", 
             "chap85": "XGBoost"
         }
         
         # Métriques de performance réelles
         performance_metrics = {
-            "chap30": {"validation_f1": 0.9808, "f1": 0.9831, "auc": 0.9997, "precision": 0.9917, "recall": 0.9746},
+            "chap30": {"validation_f1": 0.9815, "f1": 0.9796, "auc": 0.9995, "precision": 0.9889, "recall": 0.9705},
             "chap84": {"validation_f1": 0.9891, "f1": 0.9887, "auc": 0.9997, "precision": 0.9942, "recall": 0.9833},
             "chap85": {"validation_f1": 0.9808, "f1": 0.9808, "auc": 0.9993, "precision": 0.9894, "recall": 0.9723}
         }
@@ -2146,7 +2185,7 @@ async def postgresql_system_status():
     try:
         # Meilleurs modèles par chapitre
         best_models = {
-            "chap30": {"model": "CatBoost", "validation_f1": 0.9808, "f1": 0.9831, "auc": 0.9997, "precision": 0.9917, "recall": 0.9746},
+            "chap30": {"model": "XGBoost", "validation_f1": 0.9815, "f1": 0.9796, "auc": 0.9995, "precision": 0.9889, "recall": 0.9705},
             "chap84": {"model": "XGBoost", "validation_f1": 0.9891, "f1": 0.9887, "auc": 0.9997, "precision": 0.9942, "recall": 0.9833},
             "chap85": {"model": "XGBoost", "validation_f1": 0.9808, "f1": 0.9808, "auc": 0.9993, "precision": 0.9894, "recall": 0.9723}
         }
@@ -2273,20 +2312,20 @@ async def get_declarations(
         declarations_data = []
         for decl in declarations:
             declarations_data.append({
-                "declaration_id": decl[0],
-                "chapter_id": decl[1],
-                "file_name": decl[2],
-                "file_type": decl[3],
-                "source_type": decl[4],
-                "poids_net_kg": float(decl[5]) if decl[5] else None,
-                "valeur_caf": float(decl[6]) if decl[6] else None,
-                "code_sh_complet": decl[7],
-                "pays_origine_str": decl[8],
-                "pays_provenance_str": decl[9],
-                "extraction_status": decl[10],
-                "validation_status": decl[11],
-                "created_at": decl[12].isoformat() if decl[12] else None,
-                "updated_at": decl[13].isoformat() if decl[13] else None,
+                "declaration_id": decl.get("declaration_id"),
+                "chapter_id": decl.get("chapter_id"),
+                "file_name": decl.get("file_name"),
+                "file_type": decl.get("file_type"),
+                "source_type": decl.get("source_type"),
+                "poids_net_kg": float(decl.get("poids_net_kg")) if decl.get("poids_net_kg") else None,
+                "valeur_caf": float(decl.get("valeur_caf")) if decl.get("valeur_caf") else None,
+                "code_sh_complet": decl.get("code_sh_complet"),
+                "pays_origine_str": decl.get("pays_origine_str"),
+                "pays_provenance_str": decl.get("pays_provenance_str"),
+                "extraction_status": decl.get("extraction_status"),
+                "validation_status": decl.get("validation_status"),
+                "created_at": decl.get("created_at").isoformat() if decl.get("created_at") else None,
+                "updated_at": decl.get("updated_at").isoformat() if decl.get("updated_at") else None,
             })
         
         return {
@@ -2326,13 +2365,13 @@ async def get_declaration_details(declaration_id: str = Query(...)):
             "source_type": declaration.get("source_type"),
             
             # Données de base
-            "poids_net_kg": float(declaration.get("poids_net_kg", 0)) if declaration.get("poids_net_kg") else None,
+            "poids_net_kg": float(declaration.get("poids_net_kg", 0)) if declaration.get("poids_net_kg") is not None else None,
             "nombre_colis": declaration.get("nombre_colis"),
-            "quantite_complement": float(declaration.get("quantite_complement", 0)) if declaration.get("quantite_complement") else None,
-            "taux_droits_percent": float(declaration.get("taux_droits_percent", 0)) if declaration.get("taux_droits_percent") else None,
-            "valeur_caf": float(declaration.get("valeur_caf", 0)) if declaration.get("valeur_caf") else None,
-            "valeur_unitaire_kg": float(declaration.get("valeur_unitaire_kg", 0)) if declaration.get("valeur_unitaire_kg") else None,
-            "ratio_douane_caf": float(declaration.get("ratio_douane_caf", 0)) if declaration.get("ratio_douane_caf") else None,
+            "quantite_complement": float(declaration.get("quantite_complement", 0)) if declaration.get("quantite_complement") is not None else None,
+            "taux_droits_percent": float(declaration.get("taux_droits_percent", 0)) if declaration.get("taux_droits_percent") is not None else None,
+            "valeur_caf": float(declaration.get("valeur_caf", 0)) if declaration.get("valeur_caf") is not None else None,
+            "valeur_unitaire_kg": float(declaration.get("valeur_unitaire_kg", 0)) if declaration.get("valeur_unitaire_kg") is not None else None,
+            "ratio_douane_caf": float(declaration.get("ratio_douane_caf", 0)) if declaration.get("ratio_douane_caf") is not None else None,
             
             # Codes et classifications
             "code_sh_complet": declaration.get("code_sh_complet"),
@@ -2356,7 +2395,7 @@ async def get_declaration_details(declaration_id: str = Query(...)):
             "validation_status": declaration.get("validation_status"),
             "processing_notes": declaration.get("processing_notes"),
             "raw_data": declaration.get("raw_data"),
-            "ocr_confidence": float(declaration.get("ocr_confidence", 0)) if declaration.get("ocr_confidence") else None,
+            "ocr_confidence": float(declaration.get("ocr_confidence", 0)) if declaration.get("ocr_confidence") is not None else None,
             "created_at": declaration.get("created_at").isoformat() if declaration.get("created_at") else None,
             "updated_at": declaration.get("updated_at").isoformat() if declaration.get("updated_at") else None,
         }
@@ -2373,12 +2412,88 @@ async def get_declaration_details(declaration_id: str = Query(...)):
         prediction_data = {}
         if prediction_results and len(prediction_results) > 0:
             pred = prediction_results[0]
+            
+            # Parser les données JSON stockées
+            context_features = {}
+            risk_analysis = {}
+            feature_importance = {}
+            
+            # Récupérer les données (déjà en format dict grâce à RealDictCursor)
+            context_features = pred.get("context_features", {})
+            risk_analysis = pred.get("risk_analysis", {})
+            feature_importance = pred.get("feature_importance", {})
+            
+            # Si les données sont des chaînes JSON, les parser
+            if isinstance(context_features, str):
+                try:
+                    import json
+                    context_features = json.loads(context_features)
+                except:
+                    context_features = {}
+                    
+            if isinstance(risk_analysis, str):
+                try:
+                    import json
+                    risk_analysis = json.loads(risk_analysis)
+                except:
+                    risk_analysis = {}
+                    
+            if isinstance(feature_importance, str):
+                try:
+                    import json
+                    feature_importance = json.loads(feature_importance)
+                except:
+                    feature_importance = {}
+            
+            # Identifier les features activées et organisées par catégorie
+            activated_features = {}
+            business_features = {}
+            fraud_features = {}
+            
+            for key, value in context_features.items():
+                # Features business (toujours afficher car importantes pour l'inspecteur)
+                if key.startswith("BUSINESS_"):
+                    # Filtrer les features non discriminantes
+                    if key == "":
+                        # Pour chap30, cette feature est toujours 1, non discriminante
+                        continue
+                    business_features[key] = value
+                # Features de détection de fraude
+                elif key.endswith("_SCORE") or "FRAUD" in key.upper():
+                    fraud_features[key] = value
+                # Features générales (seulement si non nulles)
+                elif value is not None and value != 0 and value != "" and value != []:
+                    activated_features[key] = value
+            
             prediction_data = {
-                "fraud_probability": float(pred.get("fraud_probability", 0)),
+                "fraud_probability": float(pred.get("fraud_probability", 0)) if pred.get("fraud_probability") is not None else 0.0,
                 "decision": pred.get("decision", "conforme"),
-                "confidence_score": float(pred.get("confidence_score", 0)),
-                "ml_threshold": float(pred.get("ml_threshold", 0)),
-                "created_at": pred.get("created_at").isoformat() if pred.get("created_at") else None
+                "confidence_score": float(pred.get("confidence_score", 0)) if pred.get("confidence_score") is not None else 0.0,
+                "ml_threshold": float(pred.get("threshold_used", 0)) if pred.get("threshold_used") is not None else 0.0,
+                "model_version": pred.get("model_version", "1.0"),
+                "processing_timestamp": pred.get("processing_timestamp"),
+                "created_at": pred.get("created_at").isoformat() if pred.get("created_at") else None,
+                
+                # Features activées pour guider l'inspecteur
+                "activated_features": {
+                    "general_features": activated_features,
+                    "business_features": business_features,
+                    "fraud_detection_features": fraud_features,
+                    "total_activated": len(activated_features) + len(business_features) + len(fraud_features)
+                },
+                
+                # Analyses de risque
+                "risk_analysis": risk_analysis,
+                
+                # Importance des features
+                "feature_importance": feature_importance,
+                
+                # Métadonnées ML
+                "ml_metadata": {
+                    "decision_source": pred.get("decision_source", "ml"),
+                    "ml_integration_used": pred.get("ml_integration_used", True),
+                    "threshold_used": float(pred.get("threshold_used", 0)) if pred.get("threshold_used") is not None else 0.0
+                }
             }
         
         return {
@@ -2421,9 +2536,9 @@ async def postgresql_upload_declaration(
             # Utiliser le pipeline OCR pour la prédiction avec agrégation
             pipeline = AdvancedOCRPipeline()
             
-            # Si c'est un CSV avec agrégation, traiter toutes les déclarations
+            # Si c'est un CSV, traiter toutes les déclarations (même une seule)
             metadata = result.get("metadata", {})
-            if metadata.get("source_type") == "csv" and metadata.get("total_declarations", 1) > 1:
+            if metadata.get("source_type") == "csv":
                 # Utiliser les données déjà agrégées depuis process_declaration_file
                 all_declarations = metadata.get("all_extracted_data", [])
                 total_declarations = metadata.get("total_declarations", 1)
@@ -2439,23 +2554,7 @@ async def postgresql_upload_declaration(
                     
                     is_fraud = decision == "fraude"
                     
-                    declaration_id = decl_data.get("DECLARATION_ID", "").strip()
-                    if not declaration_id:
-                        # Essayer de reconstruire l'ID avec ANNEE/BUREAU/NUMERO
-                        annee = decl_data.get("ANNEE", "")
-                        bureau = decl_data.get("BUREAU", "")
-                        
-                        # Essayer NUMERO ou NUMERO_DECLARATION
-                        numero = decl_data.get("NUMERO", "")
-                        if not numero:
-                            numero = decl_data.get("NUMERO_DECLARATION", "")
-                        
-                        if annee and bureau and numero:
-                            declaration_id = f"{annee}/{bureau}/{numero}"
-                        else:
-                            # Fallback si les colonnes de base ne sont pas disponibles
-                            declaration_id = f"DECL_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{len(individual_predictions)+1}"
-                            logger.warning(f"Impossible de créer DECLARATION_ID avec ANNEE/BUREAU/NUMERO. Utilisation du fallback: {declaration_id}")
+                    declaration_id = _get_valid_declaration_id(decl_data)
                     
                     individual_predictions.append({
                         "declaration_id": declaration_id,
@@ -2514,7 +2613,7 @@ async def postgresql_upload_declaration(
                 "aggregation_info": {
                     "declaration_id": _get_valid_declaration_id(extracted_data),
                     "total_declarations": metadata.get("total_declarations", 1),
-                    "aggregation_applied": metadata.get("source_type") == "csv" and metadata.get("total_declarations", 1) > 1
+                    "aggregation_applied": metadata.get("source_type") == "csv"
                 },
                 "extracted_data": extracted_data
             }
@@ -2549,7 +2648,11 @@ async def postgresql_upload_declaration(
                             "decision": pred["decision"],
                             "predicted_fraud": pred["predicted_fraud"],
                             "confidence_score": pred["confidence_score"],
-                            "context": clean_data_for_json(extracted_data)
+                            "context": clean_data_for_json(extracted_data),
+                            "risk_analysis": prediction_result.get("risk_analysis", {}),
+                            "feature_importance": prediction_result.get("feature_importance", {}),
+                            "model_version": "1.0",
+                            "threshold_used": load_decision_thresholds(chapter_id).get("optimal_threshold", 0.2)
                         }
                         await save_prediction_to_postgresql(
                             declaration_id, 
@@ -2560,7 +2663,7 @@ async def postgresql_upload_declaration(
                         logger.info(f"✅ Déclaration {declaration_id} sauvegardée en PostgreSQL")
                 else:
                     # Cas fichier unique (PDF/image) - sauvegarder une seule déclaration
-                    declaration_id = f'UPLOAD_{pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")}'
+                    declaration_id = _get_valid_declaration_id(extracted_data)
                     
                     # Sauvegarder la déclaration
                     await save_declaration_to_postgresql(
@@ -2576,7 +2679,11 @@ async def postgresql_upload_declaration(
                         "decision": "fraude" if prediction_result.get("predicted_fraud", False) else "conforme",
                         "predicted_fraud": prediction_result.get("predicted_fraud", False),
                         "confidence_score": prediction_result.get("confidence_score", 0.0),
-                        "context": clean_data_for_json(prediction_result.get("context", {}))
+                        "context": clean_data_for_json(prediction_result.get("context", {})),
+                        "risk_analysis": prediction_result.get("risk_analysis", {}),
+                        "feature_importance": prediction_result.get("feature_importance", {}),
+                        "model_version": "1.0",
+                        "threshold_used": load_decision_thresholds(chapter_id).get("optimal_threshold", 0.2)
                     }
                     await save_prediction_to_postgresql(
                         declaration_id, 
@@ -2905,16 +3012,16 @@ def load_model_performance_data(model_filter: Optional[str] = None, chapter_filt
                         
                         # Utiliser les vraies métriques selon le chapitre
                         if chapter == 'chap30':
-                            # CatBoost est le meilleur modèle pour chap30
-                            chapter_data['CatBoost'] = {
-                                'accuracy': 0.9831,
-                                'f1_score': 0.9831,
-                                'auc': 0.9997,
-                                'precision': 0.9917,
-                                'recall': 0.9746,
+                            # XGBoost est le meilleur modèle pour chap30
+                            chapter_data['XGBoost'] = {
+                                'accuracy': 0.9796,
+                                'f1_score': 0.9796,
+                                'auc': 0.9995,
+                                'precision': 0.9889,
+                                'recall': 0.9705,
                                 'status': 'stable',
                                 'last_updated': datetime.now().isoformat(),
-                                'optimal_threshold': thresholds_data.get('optimal_threshold', 0.20)
+                                'optimal_threshold': thresholds_data.get('optimal_threshold', 0.35)
                             }
                         elif chapter == 'chap84':
                             # XGBoost est le meilleur modèle pour chap84
@@ -2926,7 +3033,7 @@ def load_model_performance_data(model_filter: Optional[str] = None, chapter_filt
                                 'recall': 0.9833,
                                 'status': 'stable',
                                 'last_updated': datetime.now().isoformat(),
-                                'optimal_threshold': thresholds_data.get('optimal_threshold', 0.20)
+                                'optimal_threshold': thresholds_data.get('optimal_threshold', 0.25)
                             }
                         elif chapter == 'chap85':
                             # XGBoost est le meilleur modèle pour chap85
@@ -2948,7 +3055,7 @@ def load_model_performance_data(model_filter: Optional[str] = None, chapter_filt
                 except Exception as e:
                     logger.error(f"Erreur lors du chargement des métriques pour {chapter}: {e}")
                     chapter_data = {}
-            
+        
             performance_data[chapter] = chapter_data
             
         return performance_data
@@ -2993,7 +3100,7 @@ def load_drift_detection_data(model_filter: Optional[str] = None, chapter_filter
                     
                     # Déterminer le meilleur modèle selon le chapitre
                     if chapter == 'chap30':
-                        best_model = 'CatBoost'
+                        best_model = 'XGBoost'
                     elif chapter == 'chap84':
                         best_model = 'XGBoost'
                     elif chapter == 'chap85':
@@ -3040,7 +3147,7 @@ def generate_ml_alerts(performance_data: Dict, drift_data: Dict) -> List[Dict[st
     
     # Données réelles des modèles pour générer des recommandations réalistes - Mises à jour
     real_model_data = {
-        'chap30': {'model': 'catboost', 'validation_f1': 0.9808, 'f1': 0.9831, 'auc': 0.9997, 'precision': 0.9917, 'recall': 0.9746},
+        'chap30': {'model': 'xgboost', 'validation_f1': 0.9815, 'f1': 0.9796, 'auc': 0.9995, 'precision': 0.9889, 'recall': 0.9705},
         'chap84': {'model': 'xgboost', 'validation_f1': 0.9891, 'f1': 0.9887, 'auc': 0.9997, 'precision': 0.9942, 'recall': 0.9833},
         'chap85': {'model': 'xgboost', 'validation_f1': 0.9808, 'f1': 0.9808, 'auc': 0.9993, 'precision': 0.9894, 'recall': 0.9723}
     }
@@ -3069,8 +3176,8 @@ def generate_ml_alerts(performance_data: Dict, drift_data: Dict) -> List[Dict[st
                 'timestamp': datetime.now().isoformat(),
             })
             recommendations_generated.add(model_key)
-        elif chapter == 'chap30' and model == 'catboost' and model_key not in recommendations_generated:
-            # Chap 30 CatBoost - Performance excellente, maintenance préventive
+        elif chapter == 'chap30' and model == 'xgboost' and model_key not in recommendations_generated:
+            # Chap 30 XGBoost - Performance excellente, maintenance préventive
             alerts.append({
                 'title': 'Maintenance Préventive',
                 'subtitle': f'Chap {chapter[-2:]} - {model.upper()}',
@@ -3132,7 +3239,7 @@ def generate_ml_alerts(performance_data: Dict, drift_data: Dict) -> List[Dict[st
                 continue
                 
             # Ne pas ajouter d'alerte de drift pour les meilleurs modèles car on a déjà une recommandation
-            if (chapter == 'chap85' and model.lower() == 'xgboost') or (chapter == 'chap30' and model.lower() == 'catboost') or (chapter == 'chap84' and model.lower() == 'xgboost'):
+            if (chapter == 'chap85' and model.lower() == 'xgboost') or (chapter == 'chap30' and model.lower() == 'xgboost') or (chapter == 'chap84' and model.lower() == 'xgboost'):
                 continue
                 
             if data['status'] == 'drift':
@@ -3158,7 +3265,7 @@ def generate_ml_alerts(performance_data: Dict, drift_data: Dict) -> List[Dict[st
         if not alerts:
             alerts.append({
                 'title': 'Maintenance Préventive',
-                'subtitle': 'Chap 30 - CatBoost',
+                'subtitle': 'Chap 30 - XGBoost',
                 'description': 'Performance excellente - Maintenance préventive recommandée',
                 'type': 'maintenance',
                 'priority': 'low',
@@ -3374,7 +3481,8 @@ async def get_recent_predictions_from_db() -> Dict[str, Any]:
         # Exécuter la requête
         conn = await get_postgresql_connection()
         if conn is None:
-            return await get_recent_predictions_fallback()
+            logger.error("❌ ERREUR CRITIQUE: Connexion PostgreSQL impossible")
+            raise ConnectionError("Base de données PostgreSQL indisponible. Prédictions impossibles.")
         result = await conn.fetch(query)
         
         predictions = []
@@ -3414,27 +3522,10 @@ async def get_recent_predictions_from_db() -> Dict[str, Any]:
         }
         
     except Exception as e:
-        logger.error(f"Erreur lors de la récupération des prédictions depuis PostgreSQL: {e}")
-        # Fallback avec données vides si la DB n'est pas disponible
-        return await get_recent_predictions_fallback()
+        logger.error(f"❌ ERREUR CRITIQUE: Impossible de récupérer les prédictions depuis PostgreSQL: {e}")
+        raise ValueError(f"Erreur lors de la récupération des prédictions: {e}")
 
-async def get_recent_predictions_fallback() -> Dict[str, Any]:
-    """
-    Fonction fallback avec données réelles si PostgreSQL n'est pas disponible
-    Retourne des données vides au lieu de simulations
-    """
-    try:
-        logger.warning("PostgreSQL non disponible, retour de données vides pour les prédictions récentes")
-        return {
-            'recent': [],
-            'total_today': 0,
-            'total_this_week': 0,
-            'pending': 0,
-            'message': 'Base de données non disponible'
-        }
-    except Exception as e:
-        logger.error(f"Erreur dans le fallback des prédictions: {e}")
-        return {'recent': [], 'total_today': 0, 'total_this_week': 0, 'pending': 0}
+# FONCTION FALLBACK SUPPRIMÉE - PostgreSQL est OBLIGATOIRE
 
 async def get_global_statistics_from_db() -> Dict[str, Any]:
     """
@@ -3460,7 +3551,8 @@ async def get_global_statistics_from_db() -> Dict[str, Any]:
         # Exécuter les requêtes
         conn = await get_postgresql_connection()
         if conn is None:
-            return await get_global_statistics_fallback()
+            logger.error("❌ ERREUR CRITIQUE: Connexion PostgreSQL impossible pour statistiques globales")
+            raise ConnectionError("Base de données PostgreSQL indisponible. Statistiques impossibles.")
             
         # Requêtes pour les statistiques globales
         queries = {
@@ -3538,8 +3630,8 @@ async def get_global_statistics_from_db() -> Dict[str, Any]:
         return stats
         
     except Exception as e:
-        logger.error(f"Erreur lors de la récupération des statistiques depuis PostgreSQL: {e}")
-        return await get_global_statistics_fallback()
+        logger.error(f"❌ ERREUR CRITIQUE: Impossible de récupérer les statistiques depuis PostgreSQL: {e}")
+        raise ValueError(f"Erreur lors de la récupération des statistiques: {e}")
 
 async def get_default_statistic(stat_name: str) -> Dict[str, Any]:
     """Valeurs par défaut pour les statistiques"""
@@ -3551,39 +3643,7 @@ async def get_default_statistic(stat_name: str) -> Dict[str, Any]:
     }
     return defaults.get(stat_name, {})
 
-async def get_global_statistics_fallback() -> Dict[str, Any]:
-    """Fallback avec données réelles si PostgreSQL n'est pas disponible"""
-    try:
-        logger.warning("PostgreSQL non disponible, retour de données vides pour les statistiques globales")
-        return {
-            'declarations_analyzed': {
-                'value': 0,
-                'change': 0.0,
-                'period': 'Base de données non disponible',
-                'trend': 'stable'
-            },
-            'fraud_detection_rate': {
-                'value': 0.0,
-                'change': 0.0,
-                'period': 'Base de données non disponible',
-                'trend': 'stable'
-            },
-            'control_efficiency': {
-                'value': 0.0,
-                'change': 0.0,
-                'period': 'Base de données non disponible',
-                'trend': 'stable'
-            },
-            'protected_revenue': {
-                'value': 0,
-                'change': 0.0,
-                'period': 'Base de données non disponible',
-                'trend': 'stable'
-            }
-        }
-    except Exception as e:
-        logger.error(f"Erreur dans le fallback des statistiques: {e}")
-        return {}
+# FONCTION FALLBACK SUPPRIMÉE - PostgreSQL est OBLIGATOIRE
 
 async def get_critical_alerts_from_db() -> List[Dict[str, Any]]:
     """
@@ -3634,7 +3694,8 @@ async def get_critical_alerts_from_db() -> List[Dict[str, Any]]:
         
         conn = await get_postgresql_connection()
         if conn is None:
-            return await get_critical_alerts_fallback()
+            logger.error("❌ ERREUR CRITIQUE: Connexion PostgreSQL impossible pour alertes critiques")
+            raise ConnectionError("Base de données PostgreSQL indisponible. Alertes impossibles.")
             
         for alert_config in critical_queries:
             try:
@@ -3700,17 +3761,10 @@ async def get_critical_alerts_from_db() -> List[Dict[str, Any]]:
         return alerts
         
     except Exception as e:
-        logger.error(f"Erreur lors de la récupération des alertes depuis PostgreSQL: {e}")
-        return await get_critical_alerts_fallback()
+        logger.error(f"❌ ERREUR CRITIQUE: Impossible de récupérer les alertes depuis PostgreSQL: {e}")
+        raise ValueError(f"Erreur lors de la récupération des alertes: {e}")
 
-async def get_critical_alerts_fallback() -> List[Dict[str, Any]]:
-    """Fallback avec données réelles si PostgreSQL n'est pas disponible"""
-    try:
-        logger.warning("PostgreSQL non disponible, retour de liste vide pour les alertes critiques")
-        return []
-    except Exception as e:
-        logger.error(f"Erreur dans le fallback des alertes: {e}")
-        return []
+# FONCTION FALLBACK SUPPRIMÉE - PostgreSQL est OBLIGATOIRE
 
 async def get_trends_data_from_db() -> Dict[str, Any]:
     """
@@ -3747,7 +3801,8 @@ async def get_trends_data_from_db() -> Dict[str, Any]:
         # Récupérer l'évolution de la fraude
         conn = await get_postgresql_connection()
         if conn is None:
-            return await get_trends_data_fallback()
+            logger.error("❌ ERREUR CRITIQUE: Connexion PostgreSQL impossible pour tendances")
+            raise ConnectionError("Base de données PostgreSQL indisponible. Tendances impossibles.")
             
         try:
             fraud_results = await conn.fetch(fraud_evolution_query)
@@ -3759,8 +3814,9 @@ async def get_trends_data_from_db() -> Dict[str, Any]:
                     'declarations': row['total_predictions']
                 })
         except Exception as e:
-            logger.warning(f"Erreur pour l'évolution de la fraude: {e}")
-            fraud_evolution = await get_fraud_evolution_fallback()
+            logger.error(f"❌ Erreur pour l'évolution de la fraude: {e}")
+            # PAS DE FALLBACK! Retourner une liste vide si erreur
+            fraud_evolution = []
         
         # Récupérer la performance par chapitre
         try:
@@ -3774,8 +3830,9 @@ async def get_trends_data_from_db() -> Dict[str, Any]:
                     'efficiency': round(efficiency, 1)
                 }
         except Exception as e:
-            logger.warning(f"Erreur pour la performance par chapitre: {e}")
-            performance_by_chapter = await get_performance_fallback()
+            logger.error(f"❌ Erreur pour la performance par chapitre: {e}")
+            # PAS DE FALLBACK! Retourner un dictionnaire vide si erreur
+            performance_by_chapter = {}
         
         return {
             'fraud_evolution': fraud_evolution,
@@ -3784,65 +3841,14 @@ async def get_trends_data_from_db() -> Dict[str, Any]:
         }
         
     except Exception as e:
-        logger.error(f"Erreur lors de la récupération des tendances depuis PostgreSQL: {e}")
-        return await get_trends_data_fallback()
+        logger.error(f"❌ ERREUR CRITIQUE: Impossible de récupérer les tendances depuis PostgreSQL: {e}")
+        raise ValueError(f"Erreur lors de la récupération des tendances: {e}")
 
-async def get_fraud_evolution_fallback() -> List[Dict[str, Any]]:
-    """Fallback pour l'évolution de la fraude"""
-    import time
-    current_time = time.time()
-    fraud_evolution = []
-    
-    for i in range(30):
-        date = datetime.fromtimestamp(current_time - (i * 86400))
-        base_fraud = 8.3
-        # Utiliser des données statiques au lieu de simulations
-        fraud_rate = base_fraud  # Pas de variation artificielle
-        
-        fraud_evolution.append({
-            'date': date.strftime('%Y-%m-%d'),
-            'fraud_rate': round(fraud_rate, 1),
-            'declarations': 50  # Valeur fixe au lieu de random
-        })
-    
-    return fraud_evolution
+# FONCTION FALLBACK SUPPRIMÉE - PostgreSQL est OBLIGATOIRE
 
-async def get_performance_fallback() -> Dict[str, Any]:
-    """Fallback pour la performance par chapitre"""
-    chapters = ['chap30', 'chap84', 'chap85']
-    performance_by_chapter = {}
-    
-    for chapter in chapters:
-        if chapter == 'chap30':
-            base_perf = 98.3  # CatBoost F1: 0.9831
-        elif chapter == 'chap84':
-            base_perf = 98.9  # XGBoost F1: 0.9887
-        else:  # chap85
-            base_perf = 98.1  # XGBoost F1: 0.9808
-        
-        performance_by_chapter[chapter] = {
-            'accuracy': round(base_perf, 1),  # Valeur fixe au lieu de random
-            'fraud_detected': 15,  # Valeur fixe au lieu de random
-            'total_declarations': 350,  # Valeur fixe au lieu de random
-            'efficiency': round(base_perf, 1)  # Valeur fixe au lieu de random
-        }
-    
-    return performance_by_chapter
+# FONCTION FALLBACK SUPPRIMÉE - PostgreSQL est OBLIGATOIRE
 
-async def get_trends_data_fallback() -> Dict[str, Any]:
-    """Fallback complet pour les tendances"""
-    try:
-        fraud_evolution = await get_fraud_evolution_fallback()
-        performance_by_chapter = await get_performance_fallback()
-        
-        return {
-            'fraud_evolution': fraud_evolution,
-            'performance_by_chapter': performance_by_chapter,
-            'last_updated': datetime.now().isoformat()
-        }
-    except Exception as e:
-        logger.error(f"Erreur dans le fallback des tendances: {e}")
-        return {}
+# FONCTION FALLBACK SUPPRIMÉE - PostgreSQL est OBLIGATOIRE
 
 # =============================================================================
 # NOUVEAUX ENDPOINTS POUR LES STATISTIQUES AVANCÉES
@@ -3858,7 +3864,7 @@ async def get_advanced_statistics():
                 "total_chapters": 3,
                 "total_models": 15,  # 5 modèles par chapitre
                 "best_models": {
-                    "chap30": "CatBoost",
+                    "chap30": "XGBoost",
                     "chap84": "XGBoost", 
                     "chap85": "XGBoost"
                 },
@@ -3868,14 +3874,14 @@ async def get_advanced_statistics():
             },
             "performance_summary": {
                 "chap30": {
-                    "best_model": "CatBoost",
-                    "validation_f1": 0.9808,
-                    "f1_score": 0.9831,
-                    "auc_score": 0.9997,
-                    "precision": 0.9917,
-                    "recall": 0.9746,
-                    "optimal_threshold": 0.20,
-                    "features_count": 43,
+                    "best_model": "XGBoost",
+                    "validation_f1": 0.9815,
+                    "f1_score": 0.9796,
+                    "auc_score": 0.9995,
+                    "precision": 0.9889,
+                    "recall": 0.9705,
+                    "optimal_threshold": 0.35,
+                    "features_count": 41,
                     "data_size": 25334,
                     "fraud_rate": 19.44
                 },
@@ -3933,10 +3939,10 @@ async def get_advanced_statistics():
             },
             "business_features": {
                 "chap30": [
-                    "BUSINESS_GLISSEMENT_COSMETIQUE",
-                    "BUSINESS_GLISSEMENT_PAYS_COSMETIQUES",
+                    "BUSINESS_GLISSEMENT_TARIFAIRE",
+                    "BUSINESS_GLISSEMENT_DESCRIPTION",
                     "BUSINESS_GLISSEMENT_RATIO_SUSPECT",
-                    "BUSINESS_IS_MEDICAMENT",
+                    "BUSINESS_VALEUR_UNITAIRE_SUSPECTE",
                     "BUSINESS_IS_ANTIPALUDEEN"
                 ],
                 "chap84": [
@@ -3974,11 +3980,11 @@ async def get_model_comparison():
         # Comparaison des modèles avec les vraies données
         model_comparison = {
             "chap30": {
-                "CatBoost": {"validation_f1": 0.9808, "f1": 0.9831, "auc": 0.9997, "precision": 0.9917, "recall": 0.9746, "status": "best"},
-                "XGBoost": {"validation_f1": 0.9805, "f1": 0.9811, "auc": 0.9994, "precision": 0.9987, "recall": 0.9720, "status": "good"},
-                "LightGBM": {"f1": 0.9750, "auc": 0.9992, "precision": 0.9975, "recall": 0.9700, "status": "good"},
-                "RandomForest": {"f1": 0.9700, "auc": 0.9985, "precision": 0.9960, "recall": 0.9650, "status": "good"},
-                "LogisticRegression": {"f1": 0.9600, "auc": 0.9970, "precision": 0.9940, "recall": 0.9550, "status": "acceptable"}
+                "XGBoost": {"validation_f1": 0.9815, "f1": 0.9796, "auc": 0.9995, "precision": 0.9889, "recall": 0.9705, "status": "best"},
+                "CatBoost": {"validation_f1": 0.9808, "f1": 0.9831, "auc": 0.9997, "precision": 0.9917, "recall": 0.9746, "status": "runner-up"},
+                "LightGBM": {"validation_f1": 0.9750, "f1": 0.9750, "auc": 0.9992, "precision": 0.9975, "recall": 0.9700, "status": "good"},
+                "RandomForest": {"validation_f1": 0.9700, "f1": 0.9700, "auc": 0.9985, "precision": 0.9960, "recall": 0.9650, "status": "good"},
+                "LogisticRegression": {"validation_f1": 0.9600, "f1": 0.9600, "auc": 0.9970, "precision": 0.9940, "recall": 0.9550, "status": "acceptable"}
             },
             "chap84": {
                 "XGBoost": {"validation_f1": 0.9891, "f1": 0.9887, "auc": 0.9997, "precision": 0.9942, "recall": 0.9833, "status": "best"},
@@ -4073,20 +4079,26 @@ async def get_fraud_detection_methods():
             "business_features": {
                 "chap30": {
                     "tariff_shifting": {
-                        "name": "Glissement tarifaire - Cosmétiques",
-                        "description": "Détection des cosmétiques classés comme produits pharmaceutiques",
+                        "name": "Glissement tarifaire - Produits non pharmaceutiques",
+                        "description": "Détection des produits non pharmaceutiques (code SH ≠ 30) classés comme pharma",
                         "features": [
-                            "BUSINESS_GLISSEMENT_COSMETIQUE",
-                            "BUSINESS_GLISSEMENT_PAYS_COSMETIQUES",
+                            "BUSINESS_GLISSEMENT_TARIFAIRE",
+                            "BUSINESS_GLISSEMENT_DESCRIPTION",
                             "BUSINESS_GLISSEMENT_RATIO_SUSPECT"
                         ]
                     },
                     "pharmaceutical": {
                         "name": "Produits pharmaceutiques",
-                        "description": "Identification des médicaments et antipaluéens",
+                        "description": "Identification des médicaments spécifiques",
                         "features": [
-                            "BUSINESS_IS_MEDICAMENT",
                             "BUSINESS_IS_ANTIPALUDEEN"
+                        ]
+                    },
+                    "value_indicators": {
+                        "name": "Indicateurs de valeur",
+                        "description": "Détection des valeurs unitaires suspectes",
+                        "features": [
+                            "BUSINESS_VALEUR_UNITAIRE_SUSPECTE"
                         ]
                     }
                 },
@@ -4178,15 +4190,15 @@ async def get_advanced_fraud_features():
                 },
                 "business_features": {
                     "tariff_shifting": {
-                        "features": ["BUSINESS_GLISSEMENT_COSMETIQUE", "BUSINESS_GLISSEMENT_PAYS_COSMETIQUES", "BUSINESS_GLISSEMENT_RATIO_SUSPECT"],
-                        "description": "Détection du glissement tarifaire cosmétiques → pharmaceutiques"
+                        "features": ["BUSINESS_GLISSEMENT_TARIFAIRE", "BUSINESS_GLISSEMENT_DESCRIPTION", "BUSINESS_GLISSEMENT_RATIO_SUSPECT"],
+                        "description": "Détection du glissement tarifaire (code SH ≠ 30) → pharmaceutiques"
                     },
                     "pharmaceutical": {
-                        "features": ["BUSINESS_IS_MEDICAMENT", "BUSINESS_IS_ANTIPALUDEEN"],
-                        "description": "Identification des produits pharmaceutiques"
+                        "features": ["BUSINESS_IS_ANTIPALUDEEN"],
+                        "description": "Identification des produits pharmaceutiques spécifiques"
                     },
                     "risk_indicators": {
-                        "features": ["BUSINESS_RISK_PAYS_HIGH", "BUSINESS_ORIGINE_DIFF_PROVENANCE", "BUSINESS_VALEUR_ELEVEE"],
+                        "features": ["BUSINESS_RISK_PAYS_HIGH", "BUSINESS_ORIGINE_DIFF_PROVENANCE", "BUSINESS_VALEUR_ELEVEE", "BUSINESS_VALEUR_UNITAIRE_SUSPECTE"],
                         "description": "Indicateurs de risque spécifiques au chapitre 30"
                     }
                 },
@@ -4775,44 +4787,21 @@ async def calculate_dynamic_thresholds_endpoint(chapter: str):
 
 @router.get("/{chapter}/thresholds-on-the-fly")
 async def calculate_thresholds_on_the_fly_endpoint(chapter: str):
-    """Utilise calculate_thresholds_on_the_fly pour calculer des seuils en temps réel"""
-    _validate_chapter(chapter)
-    
-    try:
-        # Utiliser la fonction de calcul de seuils en temps réel
-        from src.shared.ocr_pipeline import calculate_thresholds_on_the_fly
-        fly_thresholds = calculate_thresholds_on_the_fly(chapter)
-        
-        return {
-            "status": "success",
-            "chapter": chapter,
-            "fly_thresholds": fly_thresholds,
-            "timestamp": datetime.now().isoformat(),
-            "message": "Seuils en temps réel calculés avec succès"
-        }
-        
-    except Exception as e:
-        logger.error(f"Erreur calcul seuils temps réel {chapter}: {e}")
-        raise HTTPException(status_code=500, detail=f"Erreur calcul seuils temps réel: {str(e)}")
+    """ENDPOINT SUPPRIMÉ - Les seuils sont UNIQUEMENT dans optimal_thresholds.json"""
+    logger.error("❌ ENDPOINT OBSOLÈTE: Les seuils ne sont plus calculés à la volée")
+    raise HTTPException(
+        status_code=410, 
+        detail="Endpoint obsolète. Les seuils optimaux sont pré-calculés dans optimal_thresholds.json"
+    )
 
 @router.get("/default-thresholds")
 async def get_default_thresholds_endpoint():
-    """Utilise get_default_thresholds pour obtenir les seuils par défaut"""
-    try:
-        # Utiliser la fonction de seuils par défaut
-        from src.shared.ocr_pipeline import get_default_thresholds
-        default_thresholds = get_default_thresholds()
-        
-        return {
-            "status": "success",
-            "default_thresholds": default_thresholds,
-            "timestamp": datetime.now().isoformat(),
-            "message": "Seuils par défaut récupérés avec succès"
-        }
-        
-    except Exception as e:
-        logger.error(f"Erreur seuils par défaut: {e}")
-        raise HTTPException(status_code=500, detail=f"Erreur seuils par défaut: {str(e)}")
+    """ENDPOINT SUPPRIMÉ - Les seuils par défaut n'existent plus"""
+    logger.error("❌ ENDPOINT OBSOLÈTE: Plus de seuils par défaut")
+    raise HTTPException(
+        status_code=410,
+        detail="Endpoint obsolète. Seuls les seuils optimaux de optimal_thresholds.json sont utilisés"
+    )
 
 @router.post("/{chapter}/test-aggregation-features")
 async def test_aggregation_and_features_endpoint(chapter: str = None):
@@ -5379,9 +5368,9 @@ async def get_system_features():
                     "chap30": {
                         "best_model": "XGBoost",
                         "all_models": ["XGBoost", "CatBoost", "LightGBM", "RandomForest", "LogisticRegression"],
-                        "performance": {"validation_f1": 0.9821, "f1": 0.9811, "auc": 0.9997, "precision": 0.9876, "recall": 0.9746},
-                        "features_count": 43,
-                        "optimal_threshold": 0.20
+                        "performance": {"validation_f1": 0.9815, "f1": 0.9796, "auc": 0.9995, "precision": 0.9889, "recall": 0.9705},
+                        "features_count": 41,
+                        "optimal_threshold": 0.35
                     },
                     "chap84": {
                         "best_model": "XGBoost",

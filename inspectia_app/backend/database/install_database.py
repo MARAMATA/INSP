@@ -73,7 +73,7 @@ def install_database():
                                 data_size, advanced_fraud_detection, business_features_count)
             VALUES 
                 ('chap30', 30, 'Produits pharmaceutiques', 'Médicaments et produits pharmaceutiques', 'pharmaceutical',
-                 'xgboost', '{"f1": 0.9811, "auc": 0.9997, "precision": 0.9987, "recall": 0.9746}', 0.23, 52, 10000, true, 15),
+                 'xgboost', '{"f1": 0.9796, "auc": 0.9995, "precision": 0.9889, "recall": 0.9705}', 0.35, 41, 25334, true, 16),
                 ('chap84', 84, 'Machines et appareils mécaniques', 'Machines et équipements industriels', 'mechanical',
                  'xgboost', '{"f1": 0.9888, "auc": 0.9997, "precision": 0.9992, "recall": 0.9834}', 0.22, 54, 15000, true, 18),
                 ('chap85', 85, 'Machines et appareils électriques', 'Équipements électriques et électroniques', 'electrical',
@@ -127,8 +127,8 @@ def install_database():
         
         # Features business par chapitre
         business_features_chap30 = [
-            'BUSINESS_GLISSEMENT_COSMETIQUE', 'BUSINESS_GLISSEMENT_PAYS_COSMETIQUES',
-            'BUSINESS_GLISSEMENT_RATIO_SUSPECT', 'BUSINESS_IS_MEDICAMENT', 'BUSINESS_IS_ANTIPALUDEEN'
+            'BUSINESS_GLISSEMENT_TARIFAIRE', 'BUSINESS_GLISSEMENT_DESCRIPTION',
+            'BUSINESS_GLISSEMENT_RATIO_SUSPECT', 'BUSINESS_VALEUR_UNITAIRE_SUSPECTE', 'BUSINESS_IS_ANTIPALUDEEN'
         ]
         
         business_features_chap84 = [

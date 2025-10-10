@@ -3,16 +3,16 @@
 Pipeline OCR COMPLÈTEMENT ADAPTÉ aux résultats finaux des 3 chapitres
 MODÈLES SÉLECTIONNÉS SUR F1-SCORE DE VALIDATION (Convention train/val/test respectée)
 
-- Chapitre 30: Produits pharmaceutiques (CatBoost)
-  * Validation F1: 0.9808 ⭐ (critère de sélection)
-  * Test F1: 0.9831, Test AUC: 0.9997
-  * Seuil optimal: 0.20
+- Chapitre 30: Produits pharmaceutiques (XGBoost)
+  * Validation F1: 0.9815 ⭐ (critère de sélection)
+  * Test F1: 0.9796, Test AUC: 0.9995
+  * Seuil optimal: 0.35
   * Données: 25,334 échantillons (Fraude: 19.44%)
 
 - Chapitre 84: Machines et appareils mécaniques (XGBoost)
   * Validation F1: 0.9891 ⭐ (critère de sélection)
   * Test F1: 0.9887, Test AUC: 0.9997
-  * Seuil optimal: 0.20
+  * Seuil optimal: 0.25
   * Données: 264,494 échantillons (Fraude: 26.80%)
 
 - Chapitre 85: Appareils électriques (XGBoost)
@@ -69,25 +69,28 @@ _RL_CACHE_LOCK = threading.Lock()
 CHAPTER_CONFIGS = {
     "chap30": {
         "name": "Produits pharmaceutiques",
-        "best_model": "catboost",  # CatBoost - Sélectionné sur F1 Validation: 0.9808
-        "features_count": 43,  # Nombre réel de colonnes dans CHAP30_PROCESSED_ADVANCED.csv
-        "f1_score": 0.9831,  # Test F1 CatBoost (Validation F1: 0.9808)
-        "auc_score": 0.9997,  # Test AUC CatBoost
-        "precision": 0.9917,  # Test Precision CatBoost
-        "recall": 0.9746,  # Test Recall CatBoost
-        "accuracy": 0.9831,  # Test Accuracy
-        "validation_f1": 0.9808,  # F1 de validation (critère de sélection)
+        "best_model": "xgboost",  # XGBoost - Sélectionné sur F1 Validation: 0.9815
+        "features_count": 41,  # Nombre réel de colonnes (features optimisées)
+        "f1_score": 0.9796,  # Test F1 XGBoost (Validation F1: 0.9815)
+        "auc_score": 0.9995,  # Test AUC XGBoost
+        "precision": 0.9889,  # Test Precision XGBoost
+        "recall": 0.9705,  # Test Recall XGBoost
+        "accuracy": 0.9796,  # Test Accuracy
+        "validation_f1": 0.9815,  # F1 de validation (critère de sélection)
         "fraud_rate": 19.44,  # Taux réel de fraude dans les données
         "data_size": 25334,  # Taille réelle des données
         "leakage_risk": "LOW",
         "validation_status": "ROBUST",
-        "optimal_threshold": 0.20,  # Seuil optimal recalculé scientifiquement (maximise F1)
+        "optimal_threshold": 0.35,  # Seuil optimal recalculé scientifiquement (maximise F1)
         "model_performance": {
             "train_samples": 16213,  # Train set
             "valid_samples": 4054,   # Validation set
             "test_samples": 5067,    # Test set
             "base_rate": 0.1944,     # Taux réel de fraude
-            "auc_score": 0.9997
+            "auc_score": 0.9995,
+            "f1_score": 0.9796,
+            "precision": 0.9889,
+            "recall": 0.9705
         }
     },
     "chap84": {
@@ -359,15 +362,16 @@ def get_chap30_selected_features():
         'HIERARCHICAL_CLUSTER_SCORE', 'ADMIN_VALUES_SCORE', 
         'ADMIN_VALUES_DEVIATION', 'COMPOSITE_FRAUD_SCORE', 'RATIO_POIDS_VALEUR',
         # Features business (18) - CHAPITRE 30 (Produits pharmaceutiques)
-        'BUSINESS_GLISSEMENT_COSMETIQUE', 'BUSINESS_GLISSEMENT_PAYS_COSMETIQUES',
+        'BUSINESS_GLISSEMENT_TARIFAIRE', 'BUSINESS_GLISSEMENT_DESCRIPTION',
         'BUSINESS_GLISSEMENT_RATIO_SUSPECT', 'BUSINESS_RISK_PAYS_HIGH',
         'BUSINESS_ORIGINE_DIFF_PROVENANCE', 'BUSINESS_REGIME_PREFERENTIEL',
         'BUSINESS_REGIME_NORMAL', 'BUSINESS_VALEUR_ELEVEE',
         'BUSINESS_VALEUR_EXCEPTIONNELLE', 'BUSINESS_POIDS_ELEVE',
         'BUSINESS_DROITS_ELEVES', 'BUSINESS_RATIO_LIQUIDATION_CAF',
-        'BUSINESS_RATIO_DOUANE_CAF', 'BUSINESS_IS_MEDICAMENT',
-        'BUSINESS_IS_ANTIPALUDEEN', 'BUSINESS_IS_PRECISION_UEMOA',
+        'BUSINESS_RATIO_DOUANE_CAF',
+        'BUSINESS_IS_ANTIPALUDEEN',
         'BUSINESS_ARTICLES_MULTIPLES', 'BUSINESS_AVEC_DPI',
+        'BUSINESS_VALEUR_UNITAIRE_SUSPECTE',
         # Features catégorielles (6)
         'CODE_PRODUIT_STR', 'PAYS_ORIGINE_STR', 'PAYS_PROVENANCE_STR',
         'BUREAU', 'REGIME_FISCAL', 'NUMERO_DPI'
@@ -437,102 +441,36 @@ def get_chap85_selected_features():
 
 def calculate_dynamic_thresholds(chapter: str) -> Dict[str, float]:
     """
-    Calcule des seuils dynamiques basés sur les données réelles du chapitre
-    pour remplacer les seuils fixes arbitraires.
+    Charger les seuils optimaux depuis results/{chapter}/optimal_thresholds.json
+    CES FICHIERS SONT OBLIGATOIRES - PAS DE FALLBACK
     """
     try:
-        # Charger les seuils pré-calculés basés sur l'analyse des données réelles
-        thresholds_file = "data/dynamic_thresholds.json"
-        if os.path.exists(thresholds_file):
-            with open(thresholds_file, 'r') as f:
-                all_thresholds = json.load(f)
-                chapter_thresholds = all_thresholds.get(chapter, {})
-                
-                if chapter_thresholds:
-                    print(f"✅ Seuils dynamiques chargés pour {chapter} depuis l'analyse des données réelles")
-                    return chapter_thresholds
+        # Charger les seuils optimaux depuis le fichier JSON spécifique au chapitre
+        backend_root = Path(__file__).resolve().parents[2]
+        thresholds_file = backend_root / "results" / chapter / "optimal_thresholds.json"
         
-        # Fallback: calculer à la volée si pas de fichier
-        print(f"⚠️ Fichier de seuils non trouvé, calcul à la volée pour {chapter}")
-        return calculate_thresholds_on_the_fly(chapter)
+        if not thresholds_file.exists():
+            logger.error(f"❌ ERREUR CRITIQUE: Fichier optimal_thresholds.json introuvable pour {chapter}")
+            logger.error(f"❌ Chemin recherché: {thresholds_file}")
+            raise FileNotFoundError(f"Fichier optimal_thresholds.json introuvable pour {chapter}. Chemin: {thresholds_file}")
+        
+        with open(thresholds_file, 'r') as f:
+            chapter_thresholds = json.load(f)
+        
+        logger.info(f"✅ Seuils optimaux chargés pour {chapter} depuis {thresholds_file}")
+        logger.info(f"   - Seuil optimal: {chapter_thresholds.get('optimal_threshold', 'N/A')}")
+        logger.info(f"   - Zone conforme: < {chapter_thresholds.get('conforme', 'N/A')}")
+        logger.info(f"   - Zone fraude: > {chapter_thresholds.get('fraude', 'N/A')}")
+        
+        return chapter_thresholds
         
     except Exception as e:
-        print(f"Erreur calcul seuils dynamiques: {e}")
-        return get_default_thresholds()
+        logger.error(f"❌ ERREUR CRITIQUE: Impossible de charger les seuils pour {chapter}: {e}")
+        raise ValueError(f"Seuils optimaux introuvables pour {chapter}. Fichier optimal_thresholds.json manquant.")
 
-def calculate_thresholds_on_the_fly(chapter: str) -> Dict[str, float]:
-    """Calculer les seuils à la volée si le fichier n'existe pas"""
-    try:
-        # Charger les données d'entraînement du chapitre
-        data_path = f"data/ml_splits/{chapter}/X_train.csv"
-        y_path = f"data/ml_splits/{chapter}/y_train.csv"
-        
-        if os.path.exists(data_path) and os.path.exists(y_path):
-            X = pd.read_csv(data_path)
-            y = pd.read_csv(y_path)
-            data = pd.concat([X, y], axis=1)
-            
-            # Séparer les cas conformes et frauduleux
-            conformes = data[data['FRAUD_FLAG'] == 0]
-            
-            thresholds = {}
-            
-            # Seuils pour les poids
-            if 'POIDS_NET_KG' in conformes.columns:
-                poids_values = conformes['POIDS_NET_KG'].dropna()
-                thresholds['poids_eleve'] = poids_values.quantile(0.85)
-                thresholds['poids_tres_eleve'] = poids_values.quantile(0.95)
-                thresholds['poids_exceptionnel'] = poids_values.quantile(0.99)
-            
-            # Seuils pour les quantités
-            if 'QUANTITE_COMPLEMENT' in conformes.columns:
-                quantite_values = conformes['QUANTITE_COMPLEMENT'].dropna()
-                thresholds['quantite_elevee'] = quantite_values.quantile(0.85)
-                thresholds['quantite_tres_elevee'] = quantite_values.quantile(0.95)
-                thresholds['quantite_exceptionnelle'] = quantite_values.quantile(0.99)
-            
-            # Seuils pour les colis
-            if 'NOMBRE_COLIS' in conformes.columns:
-                colis_values = conformes['NOMBRE_COLIS'].dropna()
-                thresholds['colis_eleve'] = colis_values.quantile(0.85)
-                thresholds['colis_tres_eleve'] = colis_values.quantile(0.95)
-                thresholds['colis_exceptionnel'] = colis_values.quantile(0.99)
-            
-            # Seuils pour les taux de droits
-            if 'TAUX_DROITS_PERCENT' in conformes.columns:
-                taux_values = conformes['TAUX_DROITS_PERCENT'].dropna()
-                thresholds['taux_droits_eleve'] = taux_values.quantile(0.85)
-                thresholds['taux_droits_tres_eleve'] = taux_values.quantile(0.95)
-                thresholds['taux_droits_exceptionnel'] = taux_values.quantile(0.99)
-            
-            return thresholds
-        else:
-            return get_default_thresholds()
-    except Exception as e:
-        print(f"Erreur calcul à la volée: {e}")
-        return get_default_thresholds()
+# FONCTION SUPPRIMÉE - Utiliser UNIQUEMENT optimal_thresholds.json
 
-def get_default_thresholds() -> Dict[str, float]:
-    """Seuils par défaut en cas d'erreur"""
-    return {
-        'valeur_elevee': 10000000,
-        'valeur_tres_elevee': 50000000,
-        'valeur_exceptionnelle': 100000000,
-        'poids_eleve': 1000,
-        'poids_tres_eleve': 5000,
-        'poids_exceptionnel': 10000,
-        'quantite_elevee': 100,
-        'quantite_tres_elevee': 500,
-        'quantite_exceptionnelle': 1000,
-        'colis_eleve': 10,
-        'colis_tres_eleve': 50,
-        'colis_exceptionnel': 100,
-        'taux_droits_eleve': 10,
-        'taux_droits_tres_eleve': 20,
-        'taux_droits_exceptionnel': 30,
-        'ratio_valeur_poids_anormal': 1000,
-        'ratio_valeur_poids_tres_anormal': 5000
-    }
+# FONCTION SUPPRIMÉE - Pas de seuils par défaut, OBLIGATOIRE d'avoir optimal_thresholds.json
 
 
 def calculate_business_features(context: Dict[str, Any], chapter: str, ocr_data: Dict = None) -> Dict[str, Any]:
@@ -552,9 +490,9 @@ def calculate_business_features(context: Dict[str, Any], chapter: str, ocr_data:
         return context
         
     except Exception as e:
-        logger.warning(f"Erreur calcul features business pour {chapter}: {e}")
-        # Fallback: retourner le contexte sans features business
-        return context
+        logger.error(f"❌ ERREUR CRITIQUE: Impossible de calculer les features business pour {chapter}: {e}")
+        # PAS DE FALLBACK! Les features business sont OBLIGATOIRES pour le ML
+        raise ValueError(f"Calcul des features business échoué pour {chapter}. Prédiction impossible.")
 
 def analyze_fraud_risk_patterns(context: Dict[str, Any], chapter: str) -> Dict[str, Any]:
     """Analyser les patterns de risque de fraude basés sur les analyses poussées"""
@@ -627,27 +565,21 @@ def load_ml_model(chapter: str) -> Optional[Any]:
     try:
         config = CHAPTER_CONFIGS.get(chapter)
         if not config:
-            logger.error(f"Chapitre {chapter} non configuré")
-            return None
+            logger.error(f"❌ ERREUR CRITIQUE: Chapitre {chapter} non configuré")
+            raise ValueError(f"Chapitre {chapter} non configuré. Chapitres valides: {list(CHAPTER_CONFIGS.keys())}")
         
         best_model = config["best_model"]
         
-        # Utiliser les nouveaux modèles ML avancés depuis results/{chapter}/models
+        # Utiliser UNIQUEMENT les nouveaux modèles ML avancés depuis results/{chapter}/models
         models_dir = Path(__file__).resolve().parents[2] / "results" / chapter / "models"
         model_path = models_dir / f"{best_model}_model.pkl"
         
-        # Fallback vers l'ancien répertoire si les nouveaux modèles n'existent pas
-        if not model_path.exists():
-            package_dir = Path(__file__).resolve().parents[2] / "model_packages" / chapter
-            model_path = package_dir / f"{best_model}_production.pkl"
-            models_dir = package_dir
-            logger.info(f"Utilisation du modèle legacy pour {chapter}: {model_path}")
-        else:
-            logger.info(f"Utilisation du modèle ML avancé pour {chapter}: {model_path}")
+        # PAS DE FALLBACK vers l'ancien répertoire! Seuls les modèles avancés sont acceptés
+        logger.info(f"Chargement du modèle ML avancé pour {chapter}: {model_path}")
         
         if not model_path.exists():
-            logger.warning(f"Modèle ML non trouvé pour {chapter}: {model_path}")
-            return None
+            logger.error(f"❌ ERREUR CRITIQUE: Modèle ML introuvable pour {chapter}: {model_path}")
+            raise FileNotFoundError(f"Modèle ML introuvable pour {chapter}. Fichier: {model_path}")
         
         # Charger le modèle ML avancé
         model = joblib.load(model_path)
@@ -705,8 +637,8 @@ def load_ml_model(chapter: str) -> Optional[Any]:
         return model_data
             
     except Exception as e:
-        logger.error(f"Erreur chargement modèle ML avancé pour {chapter}: {e}")
-        return None
+        logger.error(f"❌ ERREUR CRITIQUE: Impossible de charger le modèle ML pour {chapter}: {e}")
+        raise ValueError(f"Chargement du modèle ML échoué pour {chapter}: {e}")
 
 # -------------------------------
 # CHARGEMENT DES MODÈLES RL
@@ -740,12 +672,12 @@ def load_rl_manager(chapter: str, level: str = "basic") -> Optional[Any]:
                 Path(__file__).resolve().parents[1] / "chapters" / "chap85" / "rl_integration.py"
             )
         else:
-            logger.error(f"Chapitre {chapter} non supporté")
-            return None
+            logger.error(f"❌ ERREUR CRITIQUE: Chapitre {chapter} non supporté pour RL")
+            raise ValueError(f"Chapitre {chapter} non supporté. Chapitres valides: chap30, chap84, chap85")
         
         if spec is None:
-            logger.error(f"Module RL non trouvé pour {chapter}")
-            return None
+            logger.error(f"❌ ERREUR CRITIQUE: Module RL non trouvé pour {chapter}")
+            raise FileNotFoundError(f"Module RL non trouvé pour {chapter}")
             
         rl_module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(rl_module)
@@ -760,8 +692,8 @@ def load_rl_manager(chapter: str, level: str = "basic") -> Optional[Any]:
         return manager
                 
     except Exception as e:
-        logger.error(f"Erreur chargement manager RL pour {chapter}: {e}")
-        return None
+        logger.error(f"❌ ERREUR CRITIQUE: Impossible de charger le manager RL pour {chapter}: {e}")
+        raise ValueError(f"Chargement du manager RL échoué pour {chapter}: {e}")
 
 # -------------------------------
 # PIPELINE OCR PRINCIPAL
@@ -793,15 +725,10 @@ class AdvancedOCRPipeline:
             # Charger le modèle ML
             ml_model_data = load_ml_model(chapter)
             
-            # Charger le manager RL
+            # Charger le manager RL - OBLIGATOIRE, pas de fallback
             rl_manager = load_rl_manager(chapter, level)
             
-            if not rl_manager:
-                return {
-                    "error": f"Manager RL non disponible pour {chapter}",
-                    "chapter": chapter,
-                    "level": level
-                }
+            # load_rl_manager() lève maintenant une exception si échec - pas de vérification None nécessaire
             
             # Utiliser directement le meilleur modèle ML déjà entraîné (pas de recalcul)
             ml_probability = None
@@ -827,8 +754,8 @@ class AdvancedOCRPipeline:
                     try:
                         # SOLUTION SIMPLIFIÉE: Utiliser directement le pipeline scikit-learn
                         if not ml_model_data or not ml_model_data.get('model'):
-                            self.logger.error(f"Impossible de charger le modèle ML pour {chapter}")
-                            return None
+                            self.logger.error(f"❌ ERREUR CRITIQUE: Impossible de charger le modèle ML pour {chapter}")
+                            raise ValueError(f"Modèle ML non disponible pour {chapter}. Vérifier load_ml_model().")
                         
                         # Le pipeline scikit-learn gère automatiquement l'encodage et la normalisation
                         pipeline = ml_model_data.get('model')
@@ -859,15 +786,25 @@ class AdvancedOCRPipeline:
                             active_business_features = sum(1 for k in business_features if context.get(k, 0) > 0)
                             self.logger.info(f"   Features business actives: {active_business_features}/{len(business_features)}")
                             
+                            # Compter les fraud detection features
+                            fraud_features = [k for k in context.keys() if 'SCORE' in k or k in ['MIRROR_TEI_SCORE', 'ADMIN_VALUES_SCORE', 'SPECTRAL_CLUSTER_SCORE', 'HIERARCHICAL_CLUSTER_SCORE', 'BIENAYME_CHEBYCHEV_SCORE', 'COMPOSITE_FRAUD_SCORE']]
+                            active_fraud_features = sum(1 for k in fraud_features if context.get(k, 0) != 0.0)
+                            self.logger.info(f"   Fraud detection features actives: {active_fraud_features}/{len(fraud_features)}")
+                            
+                            # Afficher les valeurs des fraud features
+                            for fraud_feature in fraud_features:
+                                value = context.get(fraud_feature, 0.0)
+                                if value != 0.0:
+                                    self.logger.info(f"   {fraud_feature}: {value:.6f}")
+                            
                             ml_probability = float(pipeline.predict_proba(df)[0][1])
-                            self.logger.info(f"✅ Prédiction ML réussie: {ml_probability:.3f}")
+                            self.logger.info(f"✅ Prédiction ML RÉELLE réussie: {ml_probability:.3f}")
+                            self.logger.info(f"✅ Modèle utilisé: {ml_model_data.get('best_model', 'Inconnu')}")
                         except Exception as e:
-                            self.logger.error(f"❌ Erreur prédiction ML: {e}")
-                            # Fallback: utiliser une probabilité basée sur les features business
-                            business_features = [k for k in context.keys() if k.startswith('BUSINESS_')]
-                            active_business_features = sum(1 for k in business_features if context.get(k, 0) > 0)
-                            ml_probability = min(0.8, active_business_features * 0.1)
-                            self.logger.info(f"🔄 Fallback: probabilité basée sur features business: {ml_probability:.3f}")
+                            self.logger.error(f"❌ ERREUR CRITIQUE: Le modèle ML n'a pas pu prédire: {e}")
+                            self.logger.error(f"❌ Détails: {str(e)}")
+                            # PLUS DE FALLBACK BIDON! Si le ML échoue, on retourne une erreur
+                            raise ValueError(f"Le modèle ML pour {chapter} a échoué. Vérifier le modèle et les features.")
                         
                         # Vérifier que la probabilité est dans une plage raisonnable
                         if ml_probability < 0.0 or ml_probability > 1.0:
@@ -895,7 +832,10 @@ class AdvancedOCRPipeline:
             
             # Enrichir le résultat avec les analyses poussées
             # Pas de calibration pour les nouveaux modèles ML avancés
-            final_probability = ml_probability if ml_probability is not None else 0.0
+            if ml_probability is None:
+                logger.error("❌ ERREUR CRITIQUE: ml_probability est None - Le modèle ML n'a pas pu prédire")
+                raise ValueError(f"La prédiction ML a échoué pour {chapter}. ml_probability est None.")
+            final_probability = ml_probability
             
             # Récupérer les métriques de performance (sans calibration)
             model_performance = ml_model_data.get('model_performance', {}) if ml_model_data else {}
@@ -1476,13 +1416,13 @@ def predict_fraud_risk(data: Dict[str, Any], chapter: str) -> Dict[str, Any]:
             for feature in missing_features:
                 df[feature] = 0.0  # Valeur par défaut
         
-        # Faire la prédiction
+        # Faire la prédiction - LE MODÈLE DOIT AVOIR predict_proba
         if hasattr(model, 'predict_proba'):
             proba = model.predict_proba(df)[0][1]  # Probabilité de classe 1 (fraude)
         else:
-            # Fallback si pas de predict_proba
-            pred = model.predict(df)[0]
-            proba = float(pred)
+            # PAS DE FALLBACK! Les modèles ML DOIVENT avoir predict_proba
+            logger.error(f"❌ ERREUR CRITIQUE: Le modèle pour {chapter} n'a pas de méthode predict_proba")
+            raise ValueError(f"Le modèle ML pour {chapter} ne supporte pas predict_proba. Modèle invalide.")
         
         # Pas de calibration pour les nouveaux modèles ML avancés
         final_proba = proba

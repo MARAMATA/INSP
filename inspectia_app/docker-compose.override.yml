@@ -1,0 +1,110 @@
+# =============================================================================
+# DOCKER COMPOSE OVERRIDE - DÉVELOPPEMENT
+# =============================================================================
+
+version: "3.9"
+
+# Override pour le développement
+services:
+  # Backend avec rechargement automatique
+  backend:
+    volumes:
+      - ./inspectia_app/backend:/app:rw  # Mode lecture/écriture pour le développement
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - HOT_RELOAD=true
+    command: ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    ports:
+      - "8000:8000"
+      - "8001:8001"  # Port de debug
+    depends_on:
+      - postgres
+      - redis
+
+  # Frontend avec rechargement automatique
+  frontend:
+    volumes:
+      - ./inspectia_app/inspectia_app_frontend:/app:rw
+    environment:
+      - NODE_ENV=development
+      - FLUTTER_DEBUG=true
+    ports:
+      - "3000:80"
+      - "3001:3001"  # Port de debug
+    build:
+      context: ./inspectia_app/inspectia_app_frontend
+      dockerfile: Dockerfile
+      target: development
+    depends_on:
+      - backend
+
+  # PostgreSQL avec données de test
+  postgres:
+    environment:
+      - POSTGRES_DB=inspectia_db_dev
+      - POSTGRES_USER=inspectia_user
+      - POSTGRES_PASSWORD=inspectia_pass
+    ports:
+      - "5432:5432"
+      - "5433:5433"  # Port de debug
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+
+  # Redis avec configuration de développement
+  redis:
+    command: redis-server --appendonly yes --maxmemory 256mb
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+
+  # MLflow avec configuration de développement
+  mlflow:
+    environment:
+      - MLFLOW_BACKEND_STORE_URI=sqlite:///mlflow.db
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_dev_data:/mlruns
+
+  # Streamlit avec rechargement automatique
+  streamlit:
+    volumes:
+      - ./inspectia_app:/app:rw
+    environment:
+      - STREAMLIT_SERVER_RUN_ON_SAVE=true
+      - STREAMLIT_SERVER_FILE_WATCHER_TYPE=poll
+    ports:
+      - "8501:8501"
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
+      target: development
+    depends_on:
+      - backend
+
+  # Nginx avec configuration de développement
+  nginx:
+    volumes:
+      - ./nginx/nginx.dev.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+      - "8080:8080"  # Port alternatif
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+      target: development
+    depends_on:
+      - frontend
+      - backend
+
+# Volumes pour le développement
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
+  mlflow_dev_data:
+
+# Note: Les profils sont gérés par le fichier docker-compose.yml principal
+# Ce fichier override est automatiquement utilisé en développement

@@ -1012,7 +1012,7 @@ class AdvancedRLManager:
         try:
             # Déterminer le meilleur modèle selon F1 de validation
             model_priority = {
-                "chap30": "catboost",  # CatBoost - Validation F1: 0.9808 ⭐ Test: F1=0.9831, AUC=0.9997
+                "chap30": "xgboost",  # XGBoost - Validation F1: 0.9815 ⭐ Test: F1=0.9796, AUC=0.9995
                 "chap84": "xgboost",   # XGBoost - Validation F1: 0.9891 ⭐ Test: F1=0.9887, AUC=0.9997
                 "chap85": "xgboost"    # XGBoost - Validation F1: 0.9808 ⭐ Test: F1=0.9808, AUC=0.9993
             }
@@ -1058,15 +1058,16 @@ class AdvancedRLManager:
         # Features spécifiques par chapitre
         chapter_specific = {
             "chap30": [
-                'BUSINESS_GLISSEMENT_COSMETIQUE', 'BUSINESS_GLISSEMENT_PAYS_COSMETIQUES',
+                'BUSINESS_GLISSEMENT_TARIFAIRE', 'BUSINESS_GLISSEMENT_DESCRIPTION',
                 'BUSINESS_GLISSEMENT_RATIO_SUSPECT', 'BUSINESS_RISK_PAYS_HIGH',
                 'BUSINESS_ORIGINE_DIFF_PROVENANCE', 'BUSINESS_REGIME_PREFERENTIEL',
                 'BUSINESS_REGIME_NORMAL', 'BUSINESS_VALEUR_ELEVEE',
                 'BUSINESS_VALEUR_EXCEPTIONNELLE', 'BUSINESS_POIDS_ELEVE',
                 'BUSINESS_DROITS_ELEVES', 'BUSINESS_RATIO_LIQUIDATION_CAF',
-                'BUSINESS_RATIO_DOUANE_CAF', 'BUSINESS_IS_MEDICAMENT',
-                'BUSINESS_IS_ANTIPALUDEEN', 'BUSINESS_IS_PRECISION_UEMOA',
-                'BUSINESS_ARTICLES_MULTIPLES', 'BUSINESS_AVEC_DPI'
+                'BUSINESS_RATIO_DOUANE_CAF',
+                'BUSINESS_IS_ANTIPALUDEEN',
+                'BUSINESS_ARTICLES_MULTIPLES', 'BUSINESS_AVEC_DPI',
+                'BUSINESS_VALEUR_UNITAIRE_SUSPECTE'
             ],
             "chap84": [
                 'BUSINESS_GLISSEMENT_MACHINE', 'BUSINESS_GLISSEMENT_PAYS_MACHINES',
@@ -1193,7 +1194,7 @@ class AdvancedRLManager:
         
         # Complexité basée sur les features business
         if self.chapter == "chap30":
-            if context.get("BUSINESS_GLISSEMENT_COSMETIQUE", 0) > 0.5:
+            if context.get("BUSINESS_GLISSEMENT_TARIFAIRE", 0) > 0.5:
                 complexity += 1
         elif self.chapter == "chap84":
             if context.get("BUSINESS_GLISSEMENT_MACHINE", 0) > 0.5:
@@ -1264,7 +1265,7 @@ class AdvancedRLManager:
         
         # Ajouter des features spécifiques au chapitre avec les nouvelles features business
         if self.chapter == "chap30":
-            glissement = context.get("BUSINESS_GLISSEMENT_COSMETIQUE", 0)
+            glissement = context.get("BUSINESS_GLISSEMENT_TARIFAIRE", 0)
             parts.append(f"GLISS:{glissement:.1f}")
         elif self.chapter == "chap84":
             glissement = context.get("BUSINESS_GLISSEMENT_MACHINE", 0)
@@ -1349,13 +1350,12 @@ class AdvancedRLManager:
                 ml_used = True
                 logger.debug(f"Prédiction ML avancée pour {self.chapter}: {base_prob:.3f}")
             except Exception as e:
-                logger.warning(f"Erreur prédiction ML avancée pour {self.chapter}: {e}")
-                base_prob = self._calculate_base_probability(context)
-                ml_used = False
+                logger.error(f"❌ ERREUR CRITIQUE ML pour {self.chapter}: {e}")
+                raise ValueError(f"Le modèle ML pour {self.chapter} a échoué. Prédiction impossible sans ML.")
         else:
-            # Fallback sur le calcul RL traditionnel
-            base_prob = self._calculate_base_probability(context)
-            ml_used = False
+            # PAS DE FALLBACK! Le modèle ML DOIT être chargé
+            logger.error(f"❌ ERREUR CRITIQUE: Aucun modèle ML chargé pour {self.chapter}")
+            raise ValueError(f"Aucun modèle ML disponible pour {self.chapter}. Prédiction impossible.")
         
         # Choix d'action avec stratégie avancée
         action, explored, strategy_info = self.bandit.choose(ctx_key, strategy=self.strategy)
@@ -1544,11 +1544,11 @@ class AdvancedRLManager:
         
         # Features business spécifiques par chapitre
         if self.chapter == "chap30":
-            # Facteurs pharmaceutiques
-            if context.get("BUSINESS_GLISSEMENT_COSMETIQUE", 0) > 0.5:
+            # Facteurs pharmaceutiques - GLISSEMENT TARIFAIRE
+            if context.get("BUSINESS_GLISSEMENT_TARIFAIRE", 0) > 0.5:
+                p += 0.25  # Le plus discriminant
+            if context.get("BUSINESS_GLISSEMENT_DESCRIPTION", 0) > 0.5:
                 p += 0.15
-            if context.get("BUSINESS_GLISSEMENT_PAYS_COSMETIQUES", 0) > 0.5:
-                p += 0.1
         elif self.chapter == "chap84":
             # Facteurs machines
             if context.get("BUSINESS_GLISSEMENT_MACHINE", 0) > 0.5:

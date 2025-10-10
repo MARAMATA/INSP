@@ -554,9 +554,9 @@ CREATE TRIGGER update_model_thresholds_updated_at BEFORE UPDATE ON model_thresho
 
 -- Insertion des chapitres avec nouvelles métriques
 INSERT INTO chapters (chapter_id, chapter_number, chapter_name, description, specialization, fraud_rate, best_model, model_performance, optimal_threshold, features_count, data_size, business_features_count) VALUES
-('chap30', 30, 'Produits pharmaceutiques', 'Produits pharmaceutiques et cosmétiques', 'Pharmaceutique', 0.15, 'CatBoost', '{"f1": 0.9831, "auc": 0.9997, "precision": 0.9917, "recall": 0.9746}', 0.20, 43, 50000, 5),
+('chap30', 30, 'Produits pharmaceutiques', 'Produits pharmaceutiques et cosmétiques', 'Pharmaceutique', 0.15, 'XGBoost', '{"f1": 0.9796, "auc": 0.9995, "precision": 0.9889, "recall": 0.9705}', 0.35, 41, 50000, 5),
 ('chap84', 84, 'Machines et appareils mécaniques', 'Machines et équipements mécaniques', 'Mécanique', 0.05, 'XGBoost', '{"f1": 0.9887, "auc": 0.9997, "precision": 0.9942, "recall": 0.9833}', 0.25, 43, 75000, 5),
-('chap85', 85, 'Machines et appareils électriques', 'Appareils électriques et électroniques', 'Électronique', 0.18, 'LightGBM', '{"f1": 0.9791, "auc": 0.9995, "precision": 0.9985, "recall": 0.9872}', 0.22, 54, 60000, 6);
+('chap85', 85, 'Machines et appareils électriques', 'Appareils électriques et électroniques', 'Électronique', 0.18, 'XGBoost', '{"f1": 0.9808, "auc": 0.9993, "precision": 0.9894, "recall": 0.9723}', 0.20, 43, 60000, 6);
 
 -- Insertion des features de base
 INSERT INTO features (feature_name, feature_type, feature_category, description, data_type, is_required) VALUES
@@ -1208,9 +1208,9 @@ CREATE TRIGGER update_model_thresholds_updated_at BEFORE UPDATE ON model_thresho
 
 -- Insertion des chapitres avec nouvelles métriques
 INSERT INTO chapters (chapter_id, chapter_number, chapter_name, description, specialization, fraud_rate, best_model, model_performance, optimal_threshold, features_count, data_size, business_features_count) VALUES
-('chap30', 30, 'Produits pharmaceutiques', 'Produits pharmaceutiques et cosmétiques', 'Pharmaceutique', 0.15, 'CatBoost', '{"f1": 0.9831, "auc": 0.9997, "precision": 0.9917, "recall": 0.9746}', 0.20, 43, 50000, 5),
+('chap30', 30, 'Produits pharmaceutiques', 'Produits pharmaceutiques et cosmétiques', 'Pharmaceutique', 0.15, 'XGBoost', '{"f1": 0.9796, "auc": 0.9995, "precision": 0.9889, "recall": 0.9705}', 0.35, 41, 50000, 5),
 ('chap84', 84, 'Machines et appareils mécaniques', 'Machines et équipements mécaniques', 'Mécanique', 0.05, 'XGBoost', '{"f1": 0.9887, "auc": 0.9997, "precision": 0.9942, "recall": 0.9833}', 0.25, 43, 75000, 5),
-('chap85', 85, 'Machines et appareils électriques', 'Appareils électriques et électroniques', 'Électronique', 0.18, 'LightGBM', '{"f1": 0.9791, "auc": 0.9995, "precision": 0.9985, "recall": 0.9872}', 0.22, 54, 60000, 6);
+('chap85', 85, 'Machines et appareils électriques', 'Appareils électriques et électroniques', 'Électronique', 0.18, 'XGBoost', '{"f1": 0.9808, "auc": 0.9993, "precision": 0.9894, "recall": 0.9723}', 0.20, 43, 60000, 6);
 
 -- Insertion des features de base
 INSERT INTO features (feature_name, feature_type, feature_category, description, data_type, is_required) VALUES
@@ -1862,9 +1862,9 @@ CREATE TRIGGER update_model_thresholds_updated_at BEFORE UPDATE ON model_thresho
 
 -- Insertion des chapitres avec nouvelles métriques
 INSERT INTO chapters (chapter_id, chapter_number, chapter_name, description, specialization, fraud_rate, best_model, model_performance, optimal_threshold, features_count, data_size, business_features_count) VALUES
-('chap30', 30, 'Produits pharmaceutiques', 'Produits pharmaceutiques et cosmétiques', 'Pharmaceutique', 0.15, 'CatBoost', '{"f1": 0.9831, "auc": 0.9997, "precision": 0.9917, "recall": 0.9746}', 0.20, 43, 50000, 5),
+('chap30', 30, 'Produits pharmaceutiques', 'Produits pharmaceutiques et cosmétiques', 'Pharmaceutique', 0.15, 'XGBoost', '{"f1": 0.9796, "auc": 0.9995, "precision": 0.9889, "recall": 0.9705}', 0.35, 41, 50000, 5),
 ('chap84', 84, 'Machines et appareils mécaniques', 'Machines et équipements mécaniques', 'Mécanique', 0.05, 'XGBoost', '{"f1": 0.9887, "auc": 0.9997, "precision": 0.9942, "recall": 0.9833}', 0.25, 43, 75000, 5),
-('chap85', 85, 'Machines et appareils électriques', 'Appareils électriques et électroniques', 'Électronique', 0.18, 'LightGBM', '{"f1": 0.9791, "auc": 0.9995, "precision": 0.9985, "recall": 0.9872}', 0.22, 54, 60000, 6);
+('chap85', 85, 'Machines et appareils électriques', 'Appareils électriques et électroniques', 'Électronique', 0.18, 'XGBoost', '{"f1": 0.9808, "auc": 0.9993, "precision": 0.9894, "recall": 0.9723}', 0.20, 43, 60000, 6);
 
 -- Insertion des features de base
 INSERT INTO features (feature_name, feature_type, feature_category, description, data_type, is_required) VALUES
@@ -2516,9 +2516,9 @@ CREATE TRIGGER update_model_thresholds_updated_at BEFORE UPDATE ON model_thresho
 
 -- Insertion des chapitres avec nouvelles métriques
 INSERT INTO chapters (chapter_id, chapter_number, chapter_name, description, specialization, fraud_rate, best_model, model_performance, optimal_threshold, features_count, data_size, business_features_count) VALUES
-('chap30', 30, 'Produits pharmaceutiques', 'Produits pharmaceutiques et cosmétiques', 'Pharmaceutique', 0.15, 'CatBoost', '{"f1": 0.9831, "auc": 0.9997, "precision": 0.9917, "recall": 0.9746}', 0.20, 43, 50000, 5),
+('chap30', 30, 'Produits pharmaceutiques', 'Produits pharmaceutiques et cosmétiques', 'Pharmaceutique', 0.15, 'XGBoost', '{"f1": 0.9796, "auc": 0.9995, "precision": 0.9889, "recall": 0.9705}', 0.35, 41, 50000, 5),
 ('chap84', 84, 'Machines et appareils mécaniques', 'Machines et équipements mécaniques', 'Mécanique', 0.05, 'XGBoost', '{"f1": 0.9887, "auc": 0.9997, "precision": 0.9942, "recall": 0.9833}', 0.25, 43, 75000, 5),
-('chap85', 85, 'Machines et appareils électriques', 'Appareils électriques et électroniques', 'Électronique', 0.18, 'LightGBM', '{"f1": 0.9791, "auc": 0.9995, "precision": 0.9985, "recall": 0.9872}', 0.22, 54, 60000, 6);
+('chap85', 85, 'Machines et appareils électriques', 'Appareils électriques et électroniques', 'Électronique', 0.18, 'XGBoost', '{"f1": 0.9808, "auc": 0.9993, "precision": 0.9894, "recall": 0.9723}', 0.20, 43, 60000, 6);
 
 -- Insertion des features de base
 INSERT INTO features (feature_name, feature_type, feature_category, description, data_type, is_required) VALUES

@@ -859,8 +859,9 @@ class Chap85MLAdvanced:
         if hasattr(categorical_transformer.named_steps['onehot'], 'get_feature_names_out'):
             cat_feature_names = categorical_transformer.named_steps['onehot'].get_feature_names_out(categorical_features)
         else:
-            # Fallback si get_feature_names_out n'est pas disponible
-            cat_feature_names = [f"{col}_{i}" for col in categorical_features for i in range(10)]  # Approximation
+            # La méthode get_feature_names_out DOIT exister (sklearn >= 1.0)
+            logger.error("❌ ERREUR CRITIQUE: get_feature_names_out n'existe pas. Mettre à jour scikit-learn >= 1.0")
+            raise AttributeError("OneHotEncoder n'a pas get_feature_names_out. Version scikit-learn trop ancienne.")
         
         # Combiner tous les noms de features
         all_feature_names = numeric_features + list(cat_feature_names)

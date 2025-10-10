@@ -12,8 +12,8 @@ InspectIA App est une application de détection de fraude douanière pour le Sé
 ### CLASSEMENT PAR PERFORMANCE (F1-Score de Validation)
 | Rang | Chapitre | Meilleur Modèle | Validation F1 ⭐ | Test F1 | Test AUC | Spécialité |
 |------|----------|-----------------|------------------|---------|----------|------------|
-| 🥇 1er | Chapitre 84 | XGBoost | 0.9891 | 0.9888 | 0.9997 | Mécanique |
-| 🥈 2ème | Chapitre 30 | XGBoost | 0.9821 | 0.9811 | 0.9997 | Pharmaceutique |
+| 🥇 1er | Chapitre 84 | XGBoost | 0.9891 | 0.9887 | 0.9997 | Mécanique |
+| 🥈 2ème | Chapitre 30 | XGBoost | 0.9815 | 0.9796 | 0.9995 | Pharmaceutique |
 | 🥉 3ème | Chapitre 85 | XGBoost | 0.9781 | 0.9808 | 0.9993 | Électrique |
 
 ## 📋 DÉTAIL PAR CHAPITRE

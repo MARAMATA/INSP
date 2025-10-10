@@ -74,22 +74,22 @@ async def get_available_chapters():
                 "id": "chap30",
                 "name": "Produits pharmaceutiques",
                 "description": "Médicaments et produits pharmaceutiques",
-                "best_model": "CatBoost",
+                "best_model": "XGBoost",
                 "model_type": "ML Avancé",
                 "performance": {
-                    "validation_f1": 0.9808,
-                    "f1_score": 0.9831,
-                    "auc_score": 0.9997,
-                    "precision": 0.9917,
-                    "recall": 0.9746
+                    "validation_f1": 0.9815,
+                    "f1_score": 0.9796,
+                    "auc_score": 0.9995,
+                    "precision": 0.9889,
+                    "recall": 0.9705
                 },
-                "features_count": 43,
+                "features_count": 41,
                 "data_size": 25334,
                 "fraud_rate": 19.44,
                 "decision_thresholds": {
                     "conforme": 0.15,
-                    "fraude": 0.25,
-                    "optimal_threshold": 0.20
+                    "fraude": 0.45,
+                    "optimal_threshold": 0.35
                 },
                 "system_status": "operational",
                 "ml_rl_integration": True,

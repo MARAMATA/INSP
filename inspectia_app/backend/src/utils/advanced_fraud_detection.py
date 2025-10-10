@@ -25,11 +25,12 @@ logger = logging.getLogger(__name__)
 class AdvancedFraudDetection:
     """Classe principale pour la détection de fraude avancée"""
     
-    def __init__(self):
+    def __init__(self, chapter: str = None):
         self.scaler = StandardScaler()
         self.product_origin_stats = {}
         self.admin_values = {}
         self.tei_thresholds = {}
+        self.chapter = chapter
         
     def clean_data_comprehensive(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -418,4 +419,109 @@ class AdvancedFraudDetection:
         logger.info(f"🎯 Taux de fraude: {df['FRAUD_FLAG'].mean()*100:.1f}%")
         logger.info("=" * 70)
         
+        # Sauvegarder les statistiques pour réutilisation en prédiction
+        if self.chapter:
+            self.save_fraud_detection_stats(df)
+        
         return df
+    
+    def save_fraud_detection_stats(self, df: pd.DataFrame):
+        """
+        Sauvegarder les statistiques de fraud detection pour réutilisation en prédiction
+        Ces stats seront utilisées pour calculer les fraud features sur de nouvelles déclarations
+        """
+        try:
+            from pathlib import Path
+            import json
+            from datetime import datetime
+            
+            # Déterminer le chemin de sauvegarde
+            backend_root = Path(__file__).resolve().parents[2]
+            stats_dir = backend_root / "results" / self.chapter
+            stats_dir.mkdir(parents=True, exist_ok=True)
+            stats_file = stats_dir / "fraud_detection_stats.json"
+            
+            logger.info(f"💾 Sauvegarde des statistiques de fraud detection pour {self.chapter}...")
+            
+            # Calculer les stats globales
+            stats = {
+                "chapter": self.chapter,
+                "version": "1.0",
+                "total_declarations": int(len(df)),
+                "fraud_rate": float(df['FRAUD_FLAG'].mean()),
+                "last_updated": datetime.now().strftime("%Y-%m-%d"),
+                
+                # Stats VALEUR_CAF globales
+                "valeur_caf": {
+                    "mean": float(df['VALEUR_CAF'].mean()),
+                    "std": float(df['VALEUR_CAF'].std()),
+                    "median": float(df['VALEUR_CAF'].median()),
+                    "q25": float(df['VALEUR_CAF'].quantile(0.25)),
+                    "q75": float(df['VALEUR_CAF'].quantile(0.75)),
+                    "min": float(df['VALEUR_CAF'].min()),
+                    "max": float(df['VALEUR_CAF'].max())
+                },
+                
+                # Stats TEI globales
+                "tei": {
+                    "mean": float(df['TEI_CALCULE'].mean()),
+                    "std": float(df['TEI_CALCULE'].std()),
+                    "median": float(df['TEI_CALCULE'].median()),
+                    "q25": float(df['TEI_CALCULE'].quantile(0.25)),
+                    "q75": float(df['TEI_CALCULE'].quantile(0.75)),
+                    "min": float(df['TEI_CALCULE'].min()),
+                    "max": float(df['TEI_CALCULE'].max())
+                },
+                
+                # Stats par couple PRODUIT/ORIGINE (les plus importantes !)
+                "product_origin_stats": {}
+            }
+            
+            # Calculer les stats par couple PRODUIT/ORIGINE
+            # Garder seulement les couples avec au moins 10 observations
+            for key, stats_dict in self.product_origin_stats.items():
+                if stats_dict['count'] >= 10:  # Seuil minimum
+                    stats["product_origin_stats"][key] = {
+                        "count": int(stats_dict['count']),
+                        "valeur_caf": {
+                            "mean": float(stats_dict['mean']),
+                            "std": float(stats_dict['std']),
+                            "median": float(stats_dict.get('median', stats_dict['mean'])),
+                            "q25": float(stats_dict.get('q25', stats_dict['mean'] * 0.7)),
+                            "q75": float(stats_dict.get('q75', stats_dict['mean'] * 1.3)),
+                            "min": float(stats_dict['min']),
+                            "max": float(stats_dict['max'])
+                        }
+                    }
+            
+            # Ajouter les stats TEI par couple PRODUIT/ORIGINE
+            for key, tei_stats_dict in self.tei_thresholds.items():
+                if tei_stats_dict['count'] >= 10 and key in stats["product_origin_stats"]:
+                    stats["product_origin_stats"][key]["tei"] = {
+                        "mean": float(tei_stats_dict['mean']),
+                        "std": float(tei_stats_dict['std']),
+                        "median": float(tei_stats_dict['median']),
+                        "q25": float(tei_stats_dict['q25']),
+                        "q75": float(tei_stats_dict['q75'])
+                    }
+            
+            # Ajouter les stats par défaut (stats globales)
+            stats["product_origin_stats"]["default"] = {
+                "comment": "Valeurs par défaut si le couple produit/origine n'est pas dans les stats",
+                "count": 0,
+                "valeur_caf": stats["valeur_caf"],
+                "tei": stats["tei"]
+            }
+            
+            # Sauvegarder dans le fichier JSON
+            with open(stats_file, 'w', encoding='utf-8') as f:
+                json.dump(stats, f, indent=2, ensure_ascii=False)
+            
+            logger.info(f"✅ Statistiques sauvegardées: {stats_file}")
+            logger.info(f"   - {len(stats['product_origin_stats'])} couples produit/origine")
+            logger.info(f"   - Taux de fraude: {stats['fraud_rate']*100:.2f}%")
+            
+        except Exception as e:
+            logger.error(f"❌ Erreur sauvegarde statistiques: {e}")
+            import traceback
+            traceback.print_exc()

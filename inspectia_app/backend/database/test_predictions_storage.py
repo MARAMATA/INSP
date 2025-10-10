@@ -119,17 +119,17 @@ def test_predictions_storage():
                 'confidence_score': 0.92,
                 'decision': 'fraude',
                 'model_used': 'XGBoost_Chap30_Best',
-                'optimal_threshold_used': 0.23,
-                'auc_score': 0.9997,
-                'f1_score': 0.9811,
-                'precision_score': 0.9987,
-                'recall_score': 0.9746,
+                'optimal_threshold_used': 0.35,
+                'auc_score': 0.9995,
+                'f1_score': 0.9796,
+                'precision_score': 0.9889,
+                'recall_score': 0.9705,
                 'ml_integration_used': True,
                 'decision_source': 'ml',
                 'context_features': {
                     'VALEUR_CAF': 50000,
                     'POIDS_NET': 100,
-                    'BUSINESS_GLISSEMENT_COSMETIQUE': True,
+                    'BUSINESS_GLISSEMENT_TARIFAIRE': True,
                     'BIENAYME_CHEBYCHEV_SCORE': 0.95
                 },
                 'risk_analysis': {
@@ -230,7 +230,7 @@ def test_predictions_storage():
                 'context_key': 'high_value_cosmetic_shift',
                 'context_json': {
                     'VALEUR_CAF': 50000,
-                    'BUSINESS_GLISSEMENT_COSMETIQUE': True,
+                    'BUSINESS_GLISSEMENT_TARIFAIRE': True,
                     'BIENAYME_CHEBYCHEV_SCORE': 0.95
                 },
                 'action': 'inspect',
@@ -540,17 +540,17 @@ def test_predictions_storage():
                 'confidence_score': 0.92,
                 'decision': 'fraude',
                 'model_used': 'XGBoost_Chap30_Best',
-                'optimal_threshold_used': 0.23,
-                'auc_score': 0.9997,
-                'f1_score': 0.9811,
-                'precision_score': 0.9987,
-                'recall_score': 0.9746,
+                'optimal_threshold_used': 0.35,
+                'auc_score': 0.9995,
+                'f1_score': 0.9796,
+                'precision_score': 0.9889,
+                'recall_score': 0.9705,
                 'ml_integration_used': True,
                 'decision_source': 'ml',
                 'context_features': {
                     'VALEUR_CAF': 50000,
                     'POIDS_NET': 100,
-                    'BUSINESS_GLISSEMENT_COSMETIQUE': True,
+                    'BUSINESS_GLISSEMENT_TARIFAIRE': True,
                     'BIENAYME_CHEBYCHEV_SCORE': 0.95
                 },
                 'risk_analysis': {
@@ -651,7 +651,7 @@ def test_predictions_storage():
                 'context_key': 'high_value_cosmetic_shift',
                 'context_json': {
                     'VALEUR_CAF': 50000,
-                    'BUSINESS_GLISSEMENT_COSMETIQUE': True,
+                    'BUSINESS_GLISSEMENT_TARIFAIRE': True,
                     'BIENAYME_CHEBYCHEV_SCORE': 0.95
                 },
                 'action': 'inspect',
@@ -961,17 +961,17 @@ def test_predictions_storage():
                 'confidence_score': 0.92,
                 'decision': 'fraude',
                 'model_used': 'XGBoost_Chap30_Best',
-                'optimal_threshold_used': 0.23,
-                'auc_score': 0.9997,
-                'f1_score': 0.9811,
-                'precision_score': 0.9987,
-                'recall_score': 0.9746,
+                'optimal_threshold_used': 0.35,
+                'auc_score': 0.9995,
+                'f1_score': 0.9796,
+                'precision_score': 0.9889,
+                'recall_score': 0.9705,
                 'ml_integration_used': True,
                 'decision_source': 'ml',
                 'context_features': {
                     'VALEUR_CAF': 50000,
                     'POIDS_NET': 100,
-                    'BUSINESS_GLISSEMENT_COSMETIQUE': True,
+                    'BUSINESS_GLISSEMENT_TARIFAIRE': True,
                     'BIENAYME_CHEBYCHEV_SCORE': 0.95
                 },
                 'risk_analysis': {
@@ -1072,7 +1072,7 @@ def test_predictions_storage():
                 'context_key': 'high_value_cosmetic_shift',
                 'context_json': {
                     'VALEUR_CAF': 50000,
-                    'BUSINESS_GLISSEMENT_COSMETIQUE': True,
+                    'BUSINESS_GLISSEMENT_TARIFAIRE': True,
                     'BIENAYME_CHEBYCHEV_SCORE': 0.95
                 },
                 'action': 'inspect',
@@ -1382,17 +1382,17 @@ def test_predictions_storage():
                 'confidence_score': 0.92,
                 'decision': 'fraude',
                 'model_used': 'XGBoost_Chap30_Best',
-                'optimal_threshold_used': 0.23,
-                'auc_score': 0.9997,
-                'f1_score': 0.9811,
-                'precision_score': 0.9987,
-                'recall_score': 0.9746,
+                'optimal_threshold_used': 0.35,
+                'auc_score': 0.9995,
+                'f1_score': 0.9796,
+                'precision_score': 0.9889,
+                'recall_score': 0.9705,
                 'ml_integration_used': True,
                 'decision_source': 'ml',
                 'context_features': {
                     'VALEUR_CAF': 50000,
                     'POIDS_NET': 100,
-                    'BUSINESS_GLISSEMENT_COSMETIQUE': True,
+                    'BUSINESS_GLISSEMENT_TARIFAIRE': True,
                     'BIENAYME_CHEBYCHEV_SCORE': 0.95
                 },
                 'risk_analysis': {
@@ -1493,7 +1493,7 @@ def test_predictions_storage():
                 'context_key': 'high_value_cosmetic_shift',
                 'context_json': {
                     'VALEUR_CAF': 50000,
-                    'BUSINESS_GLISSEMENT_COSMETIQUE': True,
+                    'BUSINESS_GLISSEMENT_TARIFAIRE': True,
                     'BIENAYME_CHEBYCHEV_SCORE': 0.95
                 },
                 'action': 'inspect',

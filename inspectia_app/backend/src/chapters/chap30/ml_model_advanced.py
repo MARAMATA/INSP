@@ -128,17 +128,24 @@ class Chap30MLAdvanced:
             'ADMIN_VALUES_DEVIATION', 'COMPOSITE_FRAUD_SCORE', 'RATIO_POIDS_VALEUR'
         ]
         
-        # Colonnes business (toutes les features BUSINESS_)
+        # Colonnes business (UNIQUEMENT les features DISCRIMINANTES)
         business_features = [
-            'BUSINESS_GLISSEMENT_COSMETIQUE', 'BUSINESS_GLISSEMENT_PAYS_COSMETIQUES',
+            # FEATURES PRINCIPALES: Glissement tarifaire (LES PLUS DISCRIMINANTES)
+            'BUSINESS_GLISSEMENT_TARIFAIRE',  # CODE_SH ne commence pas par 30 = FRAUDE MAJEURE
+            'BUSINESS_GLISSEMENT_DESCRIPTION',  # Mots-clés suspects dans description (cosmet, parfum, etc.)
+            # SUPPRIMÉ: BUSINESS_GLISSEMENT_COSMETIQUE - Redondant avec GLISSEMENT_TARIFAIRE
+            # SUPPRIMÉ: BUSINESS_GLISSEMENT_PAYS_COSMETIQUES - Redondant avec GLISSEMENT_TARIFAIRE
             'BUSINESS_GLISSEMENT_RATIO_SUSPECT', 'BUSINESS_RISK_PAYS_HIGH',
             'BUSINESS_ORIGINE_DIFF_PROVENANCE', 'BUSINESS_REGIME_PREFERENTIEL',
             'BUSINESS_REGIME_NORMAL', 'BUSINESS_VALEUR_ELEVEE',
             'BUSINESS_VALEUR_EXCEPTIONNELLE', 'BUSINESS_POIDS_ELEVE',
             'BUSINESS_DROITS_ELEVES', 'BUSINESS_RATIO_LIQUIDATION_CAF',
-            'BUSINESS_RATIO_DOUANE_CAF', 'BUSINESS_IS_MEDICAMENT',
-            'BUSINESS_IS_ANTIPALUDEEN', 'BUSINESS_IS_PRECISION_UEMOA',
-            'BUSINESS_ARTICLES_MULTIPLES', 'BUSINESS_AVEC_DPI'
+            'BUSINESS_RATIO_DOUANE_CAF', 'BUSINESS_MEDICAMENT_CONTROLE',
+            'BUSINESS_IS_ANTIPALUDEEN',
+            # SUPPRIMÉ: BUSINESS_IS_PRECISION_UEMOA - Toujours 1 pour UEMOA, pas discriminante
+            # SUPPRIMÉ: BUSINESS_IS_MEDICAMENT - Toujours 1 pour chap30, pas discriminante
+            'BUSINESS_ARTICLES_MULTIPLES', 'BUSINESS_AVEC_DPI',
+            'BUSINESS_VALEUR_UNITAIRE_SUSPECTE'
         ]
         
         # Colonnes catégorielles
@@ -810,8 +817,9 @@ class Chap30MLAdvanced:
         if hasattr(categorical_transformer.named_steps['onehot'], 'get_feature_names_out'):
             cat_feature_names = categorical_transformer.named_steps['onehot'].get_feature_names_out(categorical_features)
         else:
-            # Fallback si get_feature_names_out n'est pas disponible
-            cat_feature_names = [f"{col}_{i}" for col in categorical_features for i in range(10)]  # Approximation
+            # La méthode get_feature_names_out DOIT exister (sklearn >= 1.0)
+            logger.error("❌ ERREUR CRITIQUE: get_feature_names_out n'existe pas. Mettre à jour scikit-learn >= 1.0")
+            raise AttributeError("OneHotEncoder n'a pas get_feature_names_out. Version scikit-learn trop ancienne.")
         
         # Combiner tous les noms de features
         all_feature_names = numeric_features + list(cat_feature_names)

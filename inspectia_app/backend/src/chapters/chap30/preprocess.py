@@ -50,8 +50,8 @@ class Chap30PreprocessorComprehensive:
         self.backend_root = backend_root
         self.raw_data_path = backend_root / "data/raw/CHAPITRE_30.csv"
         self.processed_data_path = backend_root / "data/processed/CHAP30_PROCESSED_ADVANCED.csv"
-        # Initialiser le détecteur de fraude avancé
-        self.fraud_detector = AdvancedFraudDetection()
+        # Initialiser le détecteur de fraude avancé avec le chapitre
+        self.fraud_detector = AdvancedFraudDetection(chapter='chap30')
         
         # Colonnes pour DECLARATION_ID
         self.declaration_id_cols = ['ANNEE', 'BUREAU', 'NUMERO_DECLARATION']
@@ -230,24 +230,28 @@ class Chap30PreprocessorComprehensive:
         logger.info("📋 Création des features business optimisées...")
         
         # 1. FEATURES GLISSEMENT TARIFAIRE (les plus importantes)
-        # Détection cosmétiques mal classés
-        df['BUSINESS_GLISSEMENT_COSMETIQUE'] = (
-            (df['CODE_PRODUIT_STR'].str.startswith('300490')) & 
-            (df['VALEUR_UNITAIRE_KG'] > df['VALEUR_UNITAIRE_KG'].quantile(0.95))
+        # FEATURE PRINCIPALE: Glissement tarifaire (CODE_SH ne commence PAS par 30)
+        df['BUSINESS_GLISSEMENT_TARIFAIRE'] = (
+            ~df['CODE_PRODUIT_STR'].str.startswith('30', na=False)
         ).astype(int)
         
-        # Pays cosmétiques + code pharma
-        df['BUSINESS_GLISSEMENT_PAYS_COSMETIQUES'] = (
-            df['PAYS_ORIGINE_STR'].isin(['FR', 'IT', 'DE', 'ES', 'US', 'JP', 'KR']) &
-            df['CODE_PRODUIT_STR'].str.startswith('300490') &
-            (df['VALEUR_UNITAIRE_KG'] > df['VALEUR_UNITAIRE_KG'].quantile(0.90))
-        ).astype(int)
+        # SUPPRIMÉ: BUSINESS_GLISSEMENT_COSMETIQUE - Trop spécifique, redondant avec GLISSEMENT_TARIFAIRE
+        # SUPPRIMÉ: BUSINESS_GLISSEMENT_PAYS_COSMETIQUES - Trop spécifique, redondant avec GLISSEMENT_TARIFAIRE
         
-        # Ratio poids/valeur suspect (cosmétiques)
-        df['BUSINESS_GLISSEMENT_RATIO_SUSPECT'] = (
-            (df['RATIO_POIDS_VALEUR'] < df['RATIO_POIDS_VALEUR'].quantile(0.05)) &
-            df['CODE_PRODUIT_STR'].str.startswith('300490')
+        # NOUVELLE FEATURE: Détecter "glissement" dans la description
+        if 'DESCRIPTION_COMMERCIALE' in df.columns:
+            df['BUSINESS_GLISSEMENT_DESCRIPTION'] = df['DESCRIPTION_COMMERCIALE'].str.contains(
+                'glissement|cosmet|parfum|beauté|maquillage|soin|toilette', 
+                case=False, 
+                na=False
             ).astype(int)
+        else:
+            df['BUSINESS_GLISSEMENT_DESCRIPTION'] = 0
+        
+        # Ratio poids/valeur suspect
+        df['BUSINESS_GLISSEMENT_RATIO_SUSPECT'] = (
+            (df['RATIO_POIDS_VALEUR'] < df['RATIO_POIDS_VALEUR'].quantile(0.05))
+        ).astype(int)
         
         # 2. FEATURES RISQUE PAYS (contrefaçon)
         high_risk_countries = ['IN', 'CN', 'PK', 'BD', 'LK']
@@ -273,9 +277,9 @@ class Chap30PreprocessorComprehensive:
         df['BUSINESS_RATIO_DOUANE_CAF'] = df['RATIO_DOUANE_CAF']
         
         # 8. FEATURES MÉDICAMENTS (légitimes)
-        df['BUSINESS_IS_MEDICAMENT'] = df['CODE_PRODUIT_STR'].str.startswith('300490').astype(int)
+        # SUPPRIMÉ: BUSINESS_IS_MEDICAMENT - Toujours 1 pour chap30, pas discriminante
         df['BUSINESS_IS_ANTIPALUDEEN'] = df['CODE_PRODUIT_STR'].str.contains('300360|300460', na=False).astype(int)
-        df['BUSINESS_IS_PRECISION_UEMOA'] = (df['PRECISION_UEMOA'] == 90).astype(int)
+        # SUPPRIMÉ: BUSINESS_IS_PRECISION_UEMOA - Toujours 1 pour UEMOA, pas discriminante
         
         # 9. FEATURES ARTICLES ET DPI
         df['BUSINESS_ARTICLES_MULTIPLES'] = (df['NUMERO_ARTICLE'] > 1).astype(int)
