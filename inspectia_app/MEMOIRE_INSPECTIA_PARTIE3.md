@@ -1,1622 +1,1444 @@
-# MÉMOIRE INSPECTIA - PARTIE 3
+# CHAPITRE 3 : ANALYSE ET CONCEPTION DU SYSTÈME
 
-## CHAPITRE 3 : ANALYSE DE L'EXISTANT ET CONCEPTION DE LA SOLUTION PROPOSÉE
+## 3.1 Analyse des Besoins Métier
 
-### 3.1 Analyse de l'Existant
+### 3.1.1 Identification des Acteurs
 
-#### 3.1.1 Situation actuelle au sein de l'organisation
+**Acteurs principaux :**
 
-**Description du système existant :**
-L'administration douanière sénégalaise utilise actuellement le système GAINDE (Gestion Automatisée des Informations Douanières et des Échanges) depuis 1990, avec GAINDE Intégral déployé en 2023. Ce système, bien qu'opérationnel avec la dématérialisation complète depuis 2024, présente des limitations importantes en termes de détection de fraude et d'optimisation des processus de contrôle différé.
+**1. Inspecteur des Douanes :**
+- **Rôle** : Analyse des déclarations, prise de décision de contrôle
+- **Besoins** : Interface simple, explications claires, workflow optimisé
+- **Contraintes** : Temps limité, expertise variable, charge de travail élevée
+- **Objectifs** : Détection efficace des fraudes, justification des décisions
 
-**Architecture actuelle :**
-- **Base de données :** Base de données GAINDE (dématérialisée depuis 2024)
-- **Interface utilisateur :** Interface web GAINDE Intégral
-- **Serveur d'application :** Infrastructure GAINDE
-- **Système d'exploitation :** Windows Server 2012 R2
-- **Réseau :** Intranet sécurisé
+**2. Expert Machine Learning :**
+- **Rôle** : Gestion des modèles, monitoring des performances, optimisation
+- **Besoins** : Dashboards détaillés, métriques de performance, outils d'analyse
+- **Contraintes** : Expertise technique requise, maintenance continue
+- **Objectifs** : Optimisation des modèles, détection de drift, amélioration continue
 
-#### 3.1.2 Diagrammes des cas d'utilisation existants
+**3. Chef de Service :**
+- **Rôle** : Supervision, reporting, prise de décision stratégique
+- **Besoins** : Vue d'ensemble, statistiques agrégées, rapports de performance
+- **Contraintes** : Temps limité, besoin de synthèse, décisions stratégiques
+- **Objectifs** : Optimisation des ressources, amélioration de l'efficacité
 
-**Acteur 1 : Déclarant/Importateur**
+**Acteurs secondaires :**
 
-```
-[Déclarant] → [Soumettre déclaration] → [GAINDE]
-[Déclarant] → [Consulter statut] → [GAINDE]
-[Déclarant] → [Télécharger documents] → [GAINDE]
-[Déclarant] → [Payer droits] → [GAINDE]
-```
+**4. Déclarant/Importateur :**
+- **Rôle** : Soumission des déclarations, respect des procédures
+- **Besoins** : Processus simplifié, transparence, délais réduits
+- **Contraintes** : Conformité réglementaire, coûts, délais
+- **Objectifs** : Déclaration rapide et sans erreur
 
-**Acteur 2 : Agent de guichet**
+**5. Administrateur Système :**
+- **Rôle** : Maintenance technique, sécurité, performance
+- **Besoins** : Monitoring système, logs, alertes, sauvegardes
+- **Contraintes** : Disponibilité 24/7, sécurité, performance
+- **Objectifs** : Système stable et performant
 
-```
-[Agent guichet] → [Enregistrer déclaration] → [GAINDE]
-[Agent guichet] → [Vérifier documents] → [GAINDE]
-[Agent guichet] → [Valider déclaration] → [GAINDE]
-[Agent guichet] → [Transmettre au ciblage] → [GAINDE]
-```
+### 3.1.2 Analyse des Processus Métier
 
-**Acteur 3 : Agent de ciblage**
-
-```
-[Agent ciblage] → [Analyser déclaration] → [GAINDE]
-[Agent ciblage] → [Appliquer critères] → [GAINDE]
-[Agent ciblage] → [Décider contrôle] → [GAINDE]
-[Agent ciblage] → [Assigner inspecteur] → [GAINDE]
-```
-
-**Acteur 4 : Inspecteur des douanes**
+**Processus actuel (AS-IS) :**
 
 ```
-[Inspecteur] → [Consulter mission] → [GAINDE]
-[Inspecteur] → [Effectuer contrôle] → [Terrain]
-[Inspecteur] → [Saisir résultats] → [GAINDE]
-[Inspecteur] → [Générer PV] → [GAINDE]
+1. Réception déclaration → 2. Saisie manuelle → 3. Validation règles → 4. Contrôle aléatoire → 5. Décision
 ```
 
-**Acteur 5 : Chef de service**
+**Problèmes identifiés :**
+- **Saisie manuelle** : Erreurs, délais, coûts
+- **Volume important** : Plus de 487,230 déclarations à traiter
+- **Validation limitée** : Règles fixes, pas d'adaptation
+- **Contrôle aléatoire** : Inefficacité, ressources gaspillées
+- **Décision subjective** : Variabilité, manque de traçabilité
+
+**Processus cible (TO-BE) avec INSPECT_IA :**
 
 ```
-[Chef service] → [Consulter statistiques] → [GAINDE]
-[Chef service] → [Valider PV] → [GAINDE]
-[Chef service] → [Générer rapports] → [GAINDE]
-[Chef service] → [Gérer équipes] → [GAINDE]
+1. Upload document → 2. OCR automatique → 3. Preprocessing avancé → 4. Prédiction ML-RL → 5. Explication SHAP → 6. Décision assistée
 ```
 
-#### 3.1.3 Aspects non-fonctionnels de la situation actuelle
+**Améliorations apportées :**
+- **OCR automatique** : Extraction automatique des données
+- **Preprocessing avancé** : Techniques de la cellule de ciblage
+- **Prédiction intelligente** : Modèles ML optimisés + RL adaptatif
+- **Explication garantie** : SHAP pour la transparence
+- **Décision assistée** : Recommandations avec justifications
 
-**Interface utilisateur :**
-- Interface web GAINDE Intégral moderne
+### 3.1.3 Spécification des Besoins Fonctionnels
 
-**Contrôle différé actuel :**
-- Absence de système de contrôle différé automatisé
-- Analyse manuelle limitée des déclarations traitées
-- Pas de détection rétrospective des fraudes
-- Manque d'optimisation des critères de contrôle futurs
-- Interface responsive GAINDE Intégral
-- Support mobile via interface web
-- Expérience utilisateur améliorée avec GAINDE Intégral
+**Besoins fonctionnels prioritaires :**
 
-**Architecture :**
-- Architecture monolithique
-- Pas de microservices
-- Scalabilité limitée
-- Maintenance complexe
+**1. Traitement des Documents :**
+- **Upload multi-format** : CSV, PDF, Images
+- **OCR intelligent** : Extraction automatique des champs
+- **Validation des données** : Cohérence et complétude
+- **Mapping intelligent** : Adaptation aux différents formats
 
-**Sécurité :**
-- Authentification basique
-- Pas de chiffrement des données sensibles
-- Logs de sécurité insuffisants
-- Pas de gestion des sessions
+**2. Prédiction de Fraude :**
+- **Modèles ML optimisés** : XGBoost, LightGBM, CatBoost par chapitre
+- **Système RL adaptatif** : Optimisation continue des seuils
+- **Intégration SHAP** : Explicabilité des décisions
+- **Seuils optimaux** : Calculés pour maximiser le F1-score
+
+**3. Interface Utilisateur :**
+- **Multi-rôles** : Inspecteur, Expert ML, Chef de Service
+- **Dashboard temps réel** : Métriques de performance
+- **Workflow optimisé** : Processus de décision assistée
+- **Explications visuelles** : Graphiques SHAP, importance des features
+
+**4. Monitoring et Analytics :**
+- **Détection de drift** : Surveillance des changements de distribution
+- **Métriques de performance** : F1, AUC, Precision, Recall
+- **Alertes intelligentes** : Recommandations d'entraînement
+- **Historique des décisions** : Traçabilité complète
+
+### 3.1.4 Spécification des Besoins Non-Fonctionnels
 
 **Performance :**
-- Temps de réponse élevés (> 5 secondes)
-- Pas de cache
-- Base de données non optimisée
-- Pas de load balancing
-
-**Disponibilité :**
-- Temps d'arrêt fréquents
-- Pas de redondance
-- Récupération lente en cas de panne
-- Pas de monitoring proactif
-
-### 3.2 Conception de la solution proposée
-
-#### 3.2.1 Cas d'utilisation métier de la future solution (InspectIA - Outil Interne DGD)
-
-**Acteur 1 : Inspecteur des douanes (Utilisateur opérationnel - Interne DGD)**
-
-```
-[Inspecteur DGD] → [Upload Document PDF/CSV/Image] → [InspectIA Mobile/Web]
-[Inspecteur DGD] → [Sélectionner Chapitre 30/84/85] → [InspectIA Mobile/Web]
-[Inspecteur DGD] → [Consulter Prédiction ML-RL] → [InspectIA Mobile/Web]
-[Inspecteur DGD] → [Générer PV Automatique] → [InspectIA Mobile/Web]
-[Inspecteur DGD] → [Consulter Liste PV] → [InspectIA Mobile/Web]
-[Inspecteur DGD] → [Voir Détails PV] → [InspectIA Mobile/Web]
-[Inspecteur DGD] → [Donner Feedback RL] → [InspectIA Mobile/Web]
-```
-
-**Acteur 2 : Expert ML DGD (Configuration, maintenance et surveillance - Interne DGD)**
-
-```
-[Expert ML DGD] → [Upload Document PDF/CSV/Image] → [InspectIA Mobile/Web]
-[Expert ML DGD] → [Sélectionner Chapitre 30/84/85] → [InspectIA Mobile/Web]
-[Expert ML DGD] → [Consulter Prédiction ML-RL] → [InspectIA Mobile/Web]
-[Expert ML DGD] → [Générer PV Automatique] → [InspectIA Mobile/Web]
-[Expert ML DGD] → [Consulter Liste PV] → [InspectIA Mobile/Web]
-[Expert ML DGD] → [Voir Détails PV] → [InspectIA Mobile/Web]
-[Expert ML DGD] → [Donner Feedback RL] → [InspectIA Mobile/Web]
-[Expert ML DGD] → [Consulter Performance RL] → [InspectIA Mobile/Web]
-[Expert ML DGD] → [Consulter Analytics RL] → [InspectIA Mobile/Web]
-[Expert ML DGD] → [Tester Backend] → [InspectIA Mobile/Web]
-[Expert ML DGD] → [Dashboard ML - Surveillance Modèles] → [InspectIA Web]
-[Expert ML DGD] → [Détection Drift Temps Réel] → [InspectIA Web]
-[Expert ML DGD] → [Recommandations Réentraînement] → [InspectIA Web]
-[Expert ML DGD] → [Optimiser Seuils de Décision] → [optimal_thresholds.json]
-[Expert ML DGD] → [Configurer Modèles ML] → [Chap30/84/85 SupervisedML]
-[Expert ML DGD] → [Ajuster Hyperparamètres] → [XGBoost, CatBoost, LightGBM, RF, LogReg]
-[Expert ML DGD] → [Valider Calibration] → [Brier Score, ECE, BSS]
-[Expert ML DGD] → [Analyser SHAP Features] → [Interprétabilité modèles]
-[Expert ML DGD] → [Configurer RL Parameters] → [AdvancedRLManager]
-[Expert ML DGD] → [Monitorer Performance] → [PostgreSQL + SQLite]
-```
-
-**Acteur 3 : Chef de Service DGD (Supervision et prise de décisions - Interne DGD)**
-
-```
-[Chef de Service DGD] → [Dashboard de Supervision Temps Réel] → [InspectIA Web]
-[Chef de Service DGD] → [Consulter KPI Opérationnels] → [InspectIA Web]
-[Chef de Service DGD] → [Analyser Tendances de Fraude] → [InspectIA Web]
-[Chef de Service DGD] → [Surveiller Performance Équipes] → [InspectIA Web]
-[Chef de Service DGD] → [Consulter Alertes Critiques] → [InspectIA Web]
-[Chef de Service DGD] → [Exporter Rapports de Décision] → [InspectIA Web]
-[Chef de Service DGD] → [Vue d'Ensemble Système] → [InspectIA Web]
-```
-
-**Système de Profils et Permissions :**
-
-Le système InspectIA implémente un système de profils utilisateur avec des permissions granulaires :
-
-- **Inspecteur DGD** : Accès aux fonctionnalités opérationnelles de base (upload, prédiction, PV, feedback)
-- **Expert ML DGD** : Accès complet au système + fonctionnalités avancées (dashboard ML, surveillance, configuration)
-- **Chef de Service DGD** : Accès exclusif au dashboard de supervision avec données temps réel
-
-**Authentification et Sécurité :**
-- Connexion par identifiants prédéfinis pour chaque profil
-- Persistance de session avec SharedPreferences
-- Protection des routes par middleware RouteGuard
-- Redirection automatique selon les permissions
-
-#### 3.2.2 Diagrammes UML de la solution proposée (Architecture InspectIA)
-
-**Diagramme de classes principal - Backend Core :**
-
-```
-class AdvancedOCRPipeline {
-    -Dict CHAPTER_CONFIGS
-    -Dict _MODEL_CACHE
-    -threading.Lock _CACHE_LOCK
-    +predict_fraud(data: Dict, chapter: str, level: str): Dict
-    +process_file_with_ml_prediction(file_path: str, chapter: str): Dict
-    +predict_fraud_from_ocr_data(ocr_data: Dict, chapter: str): Dict
-    +load_decision_thresholds(chapter: str): Dict
-}
-
-class Chap30SupervisedML {
-    -Path data_path
-    -List[str] numerical_features
-    -List[str] categorical_features  
-    -List[str] business_features_safe
-    +validate_no_data_leakage(df: DataFrame): bool
-    +load_data(): DataFrame
-    +build_preprocessing_pipeline(): Pipeline
-    +train_models(X_train, y_train, X_val, y_val): Dict
-    +model_predict(X_new: DataFrame): Dict
-    +generate_shap_analysis(X_test, y_test, model): None
-}
-
-class Chap30PreprocessorComprehensive {
-    -Path backend_root
-    -List[str] columns_to_anonymize
-    +load_data(): DataFrame
-    +create_comprehensive_fraud_flag(df: DataFrame): Series
-    +create_comprehensive_business_features(df: DataFrame): DataFrame
-    +handle_missing_values(df: DataFrame): DataFrame
-}
-
-class AdvancedRLManager {
-    -float epsilon
-    -str strategy
-    -Dict inspector_profiles
-    -MultiArmedBandit bandit
-    +predict(context: Dict, ml_probability: float, ml_threshold: float): Dict
-    +update_feedback(declaration_id: str, chapter: str, inspector_id: str, 
-                     ml_prediction: bool, ml_probability: float, 
-                     inspector_decision: str, inspector_confidence: float): Dict
-    +calculate_feedback_quality(agreement: bool, confidence: float): float
-    +get_performance_summary(): Dict
-}
-
-class Declaration {
-    +String declaration_id
-    +String chapter_id
-    +String file_name
-    +String file_type
-    +Decimal poids_net_kg
-    +Integer nombre_colis
-    +Decimal valeur_caf
-    +String code_sh_complet
-    +String code_pays_origine
-    +String regime_complet
-    +JSON raw_data
-}
-
-class Prediction {
-    +UUID prediction_id
-    +String declaration_id
-    +Boolean predicted_fraud
-    +Decimal fraud_probability
-    +Decimal confidence_score
-    +String decision
-    +String decision_source
-    +JSON context_features
-}
-
-class RLDecision {
-    +UUID decision_id
-    +String declaration_id
-    +String action
-    +Decimal rl_probability
-    +Boolean exploration_used
-    +Decimal confidence_score
-    +JSON context_json
-}
-
-class FeedbackHistory {
-    +UUID feedback_id
-    +String declaration_id
-    +String inspector_id
-    +Boolean inspector_decision
-    +Decimal inspector_confidence
-    +Decimal reward
-    +Decimal feedback_quality_score
-    +String inspector_expertise_level
-}
-```
-
-**Diagramme de classes principal - Frontend Flutter :**
-
-```
-class AppState extends ChangeNotifier {
-    -Map<String, dynamic>? _lastAnalysisResult
-    -List<Map<String, dynamic>> _recentDeclarations
-    -List<Map<String, dynamic>> _pvList
-    -Map<String, dynamic>? _currentAnalytics
-    +setLastAnalysisResult(result: Map): void
-    +addPV(pv: Map): void
-    +autoPredict(chapter: String, requestData: Map): Future<Map>
-    +processOcrDocument(chapter: String, fileBytes: List<int>, fileName: String): Future<Map>
-    +addRlFeedback(chapter: String, feedbackData: Map): Future<bool>
-    +loadPVList(chapter: String): Future<void>
-    +loadPVDetail(pvId: String, chapter: String): Future<Map>
-    +getRecentDeclarationIds(): List<String>
-}
-
-class CompleteBackendService {
-    -bool _isLoading
-    -String? _error
-    -Map<String, dynamic>? _lastResponse
-    +healthCheck(): Future<Map<String, dynamic>?>
-    +getAvailableChapters(): Future<List<Map>>
-    +uploadDeclarationFile(chapter: String, fileBytes: List<int>, fileName: String): Future<Map>
-    +generatePV(chapter: String, requestData: Map): Future<Map>
-    +getPVList(chapter: String): Future<List<Map>>
-    +getPVDetail(pvId: String, chapter: String): Future<Map>
-    +getRLAnalytics(chapter: String): Future<Map>
-    +addRLFeedback(chapter: String, feedbackData: Map): Future<bool>
-    +getMLDashboardData(): Future<Map>
-    +getChefDashboardData(): Future<Map>
-    +getMLPerformanceData(): Future<Map>
-    +getMLDriftData(): Future<Map>
-    +getMLCalibrationData(): Future<Map>
-    +getMLAlertsData(): Future<Map>
-}
-
-class UserProfile {
-    +String id
-    +String username
-    +String fullName
-    +UserRole role
-    +String department
-    +List<String> permissions
-    +List<String> accessiblePages
-    +bool canAccessPage(String page): bool
-    +bool hasPermission(String permission): bool
-}
-
-enum UserRole {
-    inspecteur
-    expertML
-    chefService
-}
-
-class RouteGuard {
-    +bool canAccess(String route, UserProfile user): bool
-    +void redirectToHome(): void
-    +void showAccessDenied(): void
-}
-
-class MLDashboardScreen {
-    -Map<String, dynamic>? _modelPerformance
-    -Map<String, dynamic>? _driftData
-    -Map<String, dynamic>? _calibrationData
-    -List<Map<String, dynamic>> _alerts
-    -Timer? _refreshTimer
-    -AnimationController? _animationController
-    +_loadMLDashboardData(): Future<void>
-    +_loadModelPerformance(): Future<void>
-    +_loadDriftData(): Future<void>
-    +_loadCalibrationData(): Future<void>
-    +_loadAlertsData(): Future<void>
-    +_buildPerformanceCards(): List<Widget>
-    +_buildDriftRows(): List<Widget>
-    +_buildChartContent(String title, Color color): Widget
-    +_formatTime(DateTime timestamp): String
-}
-
-class DashboardScreen {
-    -Map<String, dynamic>? _dashboardData
-    -Timer? _refreshTimer
-    -bool _isLoading
-    -String? _errorMessage
-    +_loadDashboardData(): Future<void>
-    +_buildKPICardsFromData(): List<Widget>
-    +_buildChartContent(String title, Color color): Widget
-    +_buildTableRows(): List<Widget>
-    +_buildInspectorRows(): List<Widget>
-    +_buildTableRow(String declaration, String chapter, String prediction, String date, String risk, {Color? riskColor}): Widget
-    +_buildInspectorRow(String name, String chapter, String accuracy, String performance, {String? initials}): Widget
-}
-```
-
-**Diagramme de séquence - Processus de prédiction InspectIA (Outil Interne DGD) :**
-
-```
-Inspecteur DGD -> Flutter: Upload Document PDF/CSV/Image
-Flutter -> FastAPI: POST /predict/{chapter}/process-ocr
-FastAPI -> OCRIngest: process_declaration_file()
-OCRIngest -> OCRPipeline: process_file_with_ml_prediction()
-OCRPipeline -> Chap30ML: model.predict_proba()
-Chap30ML -> OCRPipeline: Return fraud_probability
-OCRPipeline -> RLManager: predict(context, ml_probability)
-RLManager -> OCRPipeline: Return hybrid decision
-OCRPipeline -> FastAPI: Return complete result
-FastAPI -> PostgreSQL: save_declaration_to_postgresql()
-FastAPI -> PostgreSQL: save_prediction_to_postgresql()
-FastAPI -> PostgreSQL: save_rl_decision_to_postgresql()
-FastAPI -> Flutter: Return analysis result
-Flutter -> AppState: setLastAnalysisResult()
-Flutter -> Inspecteur DGD: Display results (aide au ciblage)
-```
-
-**Diagramme d'activités - Workflow InspectIA (Outil Interne DGD) :**
-
-```
-[Début] -> [Inspecteur DGD Upload Document] -> [OCR Extraction] -> [ML Prediction]
-[ML Prediction] -> [RL Decision] -> [Database Storage] -> [PV Generation]
-[PV Generation] -> [Frontend Display] -> [Inspector DGD Feedback] -> [RL Learning]
-[RL Learning] -> [Model Improvement] -> [Ready for Next Analysis (Aide au Ciblage)]
-```
-
-#### 3.2.3 Résultats expérimentaux et performances des modèles
-
-**3.2.3.1 Performances par chapitre (Données réelles)**
-
-**Chapitre 30 - Produits pharmaceutiques :**
-- **Modèle optimal** : XGBoost calibré
-- **F1-Score** : 0.971
-- **AUC** : 0.996
-- **Précision** : 0.997
-- **Rappel** : 0.946
-- **Taux de fraude** : 10.84%
-- **Échantillons** : 55,495 (Train: 44,396 / Test: 11,099)
-- **Features** : 22 (4 numériques + 8 catégorielles + 10 business)
-- **Calibration** : EXCELLENT (Brier Score: 0.0058, ECE: 0.0024, BSS: 0.9403)
-- **Seuils optimaux** : conforme < 0.2, fraude > 0.8
-
-**Chapitre 84 - Machines et équipements mécaniques :**
-- **Modèle optimal** : CatBoost calibré
-- **F1-Score** : 0.997
-- **AUC** : 0.999
-- **Précision** : 0.996
-- **Rappel** : 0.999
-- **Taux de fraude** : 10.77%
-- **Échantillons** : 138,250 (Train: 110,500 / Test: 27,625)
-- **Features** : 21 (4 numériques + 8 catégorielles + 9 business)
-- **Calibration** : EXCEPTIONAL (Brier Score: 0.0003, ECE: 0.0000, BSS: 0.9964)
-- **Seuils optimaux** : conforme < 0.1, fraude > 0.9
-
-**Chapitre 85 - Machines et équipements électriques :**
-- **Modèle optimal** : XGBoost calibré
-- **F1-Score** : 0.965
-- **AUC** : 0.994
-- **Précision** : 0.990
-- **Rappel** : 0.942
-- **Taux de fraude** : 19.2%
-- **Échantillons** : 130,475 (Train: 104,380 / Test: 26,095)
-- **Features** : 23 (4 numériques + 8 catégorielles + 11 business)
-- **Calibration** : EXCELLENT (Brier Score: 0.0030, ECE: 0.0006, BSS: 0.9891)
-- **Seuils optimaux** : conforme < 0.192, fraude > 0.557
-
-**3.2.3.2 Visualisations et analyses SHAP**
-
-Les analyses SHAP révèlent les features les plus importantes pour chaque chapitre :
-
-**Chapitre 30 - Top Features :**
-1. BUSINESS_POIDS_NET_KG_EXCEPTIONNEL (corrélation: +0.2883)
-2. BUSINESS_VALEUR_CAF_EXCEPTIONNEL (corrélation: +0.2883)
-3. BUSINESS_SOUS_EVALUATION (corrélation: +0.2883)
-4. BUSINESS_QUANTITE_COMPLEMENT_EXCEPTIONNEL (corrélation: +0.2880)
-5. BUSINESS_NOMBRE_COLIS_EXCEPTIONNEL (corrélation: +0.2877)
-
-**Chapitre 84 - Top Features :**
-1. BUSINESS_RISK_PAYS_ORIGINE (corrélation: +0.4803)
-2. BUSINESS_IS_ELECTROMENAGER (corrélation: +0.4436)
-3. BUSINESS_DETOURNEMENT_REGIME (corrélation: +0.4376)
-4. BUSINESS_FAUSSE_DECLARATION_ESPECE (corrélation: +0.4201)
-5. BUSINESS_FAUSSE_DECLARATION_ASSEMBLAGE (corrélation: +0.4102)
-
-**Chapitre 85 - Top Features :**
-1. BUSINESS_FAUSSE_DECLARATION_ESPECE (corrélation: +0.6891)
-2. BUSINESS_TAUX_DROITS_ELEVE (corrélation: -0.4443)
-3. BUSINESS_TAUX_DROITS_TRES_ELEVE (corrélation: -0.4413)
-4. BUSINESS_SOUS_EVALUATION (corrélation: +0.4201)
-5. BUSINESS_RISK_PAYS_ORIGINE (corrélation: +0.3802)
-
-**3.2.3.3 Visualisations et graphiques de performance**
-
-Les résultats expérimentaux sont illustrés par de nombreuses visualisations générées automatiquement :
-
-**📊 Graphiques de performance par chapitre :**
-
-*Chapitre 30 - Produits pharmaceutiques :*
-- **Figure 3.1** : `confusion_matrix_best.png` - Matrice de confusion du meilleur modèle (XGBoost)
-- **Figure 3.2** : `roc_curve_best.png` - Courbe ROC avec AUC = 0.996
-- **Figure 3.3** : `precision_recall_curve_best.png` - Courbe Précision-Rappel
-- **Figure 3.4** : `metrics_best.png` - Métriques de performance détaillées
-- **Figure 3.5** : `shap_summary_plot_20.png` - Analyse SHAP des 20 features principales
-- **Figure 3.6** : `shap_feature_importance_20.png` - Importance des features SHAP
-
-*Chapitre 84 - Machines et équipements mécaniques :*
-- **Figure 3.7** : `confusion_matrix_best.png` - Matrice de confusion du meilleur modèle (CatBoost)
-- **Figure 3.8** : `roc_curve_best.png` - Courbe ROC avec AUC = 0.999
-- **Figure 3.9** : `precision_recall_curve_best.png` - Courbe Précision-Rappel
-- **Figure 3.10** : `metrics_best.png` - Métriques de performance détaillées
-- **Figure 3.11** : `shap_summary_plot_20.png` - Analyse SHAP des 20 features principales
-- **Figure 3.12** : `shap_feature_importance_20.png` - Importance des features SHAP
-
-*Chapitre 85 - Machines et équipements électriques :*
-- **Figure 3.13** : `confusion_matrix_best.png` - Matrice de confusion du meilleur modèle (XGBoost)
-- **Figure 3.14** : `roc_curve_best.png` - Courbe ROC avec AUC = 0.994
-- **Figure 3.15** : `precision_recall_curve_best.png` - Courbe Précision-Rappel
-- **Figure 3.16** : `metrics_best.png` - Métriques de performance détaillées
-- **Figure 3.17** : `shap_summary_plot_20.png` - Analyse SHAP des 20 features principales
-- **Figure 3.18** : `shap_feature_importance_20.png` - Importance des features SHAP
-
-**📈 Graphiques de comparaison inter-algorithmes :**
-
-- **Figure 3.19** : `confusion_matrices_all.png` - Matrices de confusion pour tous les algorithmes
-- **Figure 3.20** : `roc_curves_all.png` - Comparaison des courbes ROC
-- **Figure 3.21** : `precision_recall_curves_all.png` - Comparaison des courbes Précision-Rappel
-- **Figure 3.22** : `metrics_comparison_all.png` - Comparaison des métriques de performance
-- **Figure 3.23** : `roc_comparison_all_algorithms.png` - Comparaison ROC inter-algorithmes
-- **Figure 3.24** : `metrics_comparison_all_algorithms.png` - Comparaison métriques inter-algorithmes
-
-**🎯 Emplacement des images dans le mémoire :**
-
-*Section 3.2.3 - Résultats expérimentaux :*
-- Placer les figures 3.1 à 3.18 dans cette section pour illustrer les performances par chapitre
-- Utiliser les images `*_best.png` pour chaque chapitre
-
-*Section 4.2.5 - Analyse SHAP et interprétabilité :*
-- Placer les figures SHAP (3.5, 3.6, 3.11, 3.12, 3.17, 3.18) dans cette section
-- Expliquer l'interprétabilité des modèles
-
-*Section 4.3 - Évaluation et validation :*
-- Placer les figures de comparaison (3.19 à 3.24) dans cette section
-- Analyser les performances relatives des algorithmes
-
-*Annexes :*
-- Placer toutes les images dans un dossier `images/` à la racine du mémoire
-- Organiser par chapitre : `images/chap30/`, `images/chap84/`, `images/chap85/`
-- Créer un index des figures en annexe
-
-#### 3.2.4 Dessins des IHM métier
-
-**Interface Web - Dashboard Principal :**
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│ InspectIA - Plateforme de Détection de Fraude Douanière    │
-├─────────────────────────────────────────────────────────────┤
-│ [Logo] [Menu] [Notifications] [Profil] [Déconnexion]        │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
-│  │ Déclarations│  │ Prédictions │  │ Contrôles   │         │
-│  │   1,247     │  │    892      │  │    156      │         │
-│  │   Aujourd'hui│  │   Aujourd'hui│  │   Aujourd'hui│         │
-│  └─────────────┘  └─────────────┘  └─────────────┘         │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │ Graphique des Prédictions par Chapitre                 │ │
-│  │ [Graphique en barres - Chapitres 30, 84, 85]          │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │ Dernières Déclarations Analysées                       │ │
-│  │ [Tableau avec colonnes : ID, Chapitre, Probabilité,    │ │
-│  │  Décision, Date, Actions]                              │ │
-│  └─────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**Interface Mobile - Application Inspecteur :**
-
-```
-┌─────────────────────────┐
-│ InspectIA Mobile        │
-├─────────────────────────┤
-│ [≡] [🔔] [👤]           │
-├─────────────────────────┤
-│                         │
-│  ┌─────────────────────┐ │
-│  │ Missions du jour    │ │
-│  │ [Liste des missions]│ │
-│  └─────────────────────┘ │
-│                         │
-│  ┌─────────────────────┐ │
-│  │ Contrôle en cours   │ │
-│  │ [Détails déclaration]│ │
-│  └─────────────────────┘ │
-│                         │
-│  ┌─────────────────────┐ │
-│  │ Feedback rapide     │ │
-│  │ [Boutons : Conforme │ │
-│  │  / Zone grise /     │ │
-│  │  Fraude]            │ │
-│  └─────────────────────┘ │
-│                         │
-│  [📊] [📝] [⚙️] [📞]    │
-└─────────────────────────┘
-```
-
-**Interface de Prédiction - Page Déclaration :**
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│ Déclaration #2024/10S/55367 - Chapitre 84                  │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│ Informations Générales :                                    │
-│ • Importateur : SOCIÉTÉ ABC SARL                           │
-│ • Date soumission : 15/01/2024 14:30                       │
-│ • Valeur déclarée : 2,500,000 FCFA                         │
-│ • Pays origine : Chine                                      │
-│                                                             │
-│ ┌─────────────────────────────────────────────────────────┐ │
-│ │ Résultat de l'Analyse IA                               │ │
-│ │                                                         │ │
-│ │ Probabilité de fraude : 0.73 (73%)                     │ │
-│ │ Décision : FRAUDE                                       │ │
-│ │ Niveau de confiance : 0.89 (89%)                       │ │
-│ │                                                         │ │
-│ │ Facteurs de risque identifiés :                         │ │
-│ │ • Valeur sous-évaluée (risque élevé)                   │ │
-│ │ • Pays d'origine suspect                               │ │
-│ │ • Historique de l'importateur                          │ │
-│ └─────────────────────────────────────────────────────────┘ │
-│                                                             │
-│ Actions :                                                   │
-│ [🔍 Contrôle détaillé] [📝 Générer PV] [📊 Analytics]      │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
-
-#### 3.2.4 Architecture fonctionnelle de la future solution
-
-**Vue d'ensemble de l'architecture :**
+- **Temps de réponse** : < 2 secondes pour l'analyse complète
+- **Débit** : > 1000 déclarations/heure
+- **Disponibilité** : 99.9% (8h de maintenance/mois)
+- **Scalabilité** : Support de 10,000+ utilisateurs simultanés
+
+**Sécurité :**
+- **Authentification** : Multi-facteurs, SSO
+- **Autorisation** : Contrôle d'accès basé sur les rôles (RBAC)
+- **Chiffrement** : TLS 1.3, chiffrement des données sensibles
+- **Audit** : Logs de sécurité, traçabilité des actions
+
+**Fiabilité :**
+- **Résilience** : Tolérance aux pannes, redondance
+- **Sauvegarde** : Backup automatique quotidien
+- **Récupération** : RTO < 4h, RPO < 1h
+- **Monitoring** : Surveillance proactive 24/7
+
+**Maintenabilité :**
+- **Architecture modulaire** : Composants découplés
+- **Documentation** : Code documenté, API documentée
+- **Tests** : Couverture > 80%, tests automatisés
+- **Déploiement** : CI/CD, déploiement sans interruption
+
+## 3.2 Architecture Fonctionnelle INSPECT_IA
+
+### 3.2.1 Vue d'Ensemble de l'Architecture
+
+**Architecture en couches :**
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    COUCHE PRÉSENTATION                     │
-├─────────────────────────────────────────────────────────────┤
-│  Web App (Flutter)  │  Mobile App (Flutter)  │  Admin Panel │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐          │
+│  │ Inspecteur  │ │ Expert ML   │ │ Chef Service│          │
+│  │ (Flutter)   │ │ (Flutter)   │ │ (Flutter)   │          │
+│  └─────────────┘ └─────────────┘ └─────────────┘          │
 └─────────────────────────────────────────────────────────────┘
-                                │
 ┌─────────────────────────────────────────────────────────────┐
-│                    COUCHE API GATEWAY                       │
-├─────────────────────────────────────────────────────────────┤
-│              FastAPI + Authentication + CORS                │
+│                    COUCHE API REST                         │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐          │
+│  │ FastAPI     │ │ Validation  │ │ Authentif.  │          │
+│  │ Endpoints   │ │ Données     │ │ Autorisation│          │
+│  └─────────────┘ └─────────────┘ └─────────────┘          │
 └─────────────────────────────────────────────────────────────┘
-                                │
 ┌─────────────────────────────────────────────────────────────┐
-│                    COUCHE MÉTIER                            │
-├─────────────────────────────────────────────────────────────┤
-│  OCR Pipeline  │  ML Models  │  RL Manager  │  PV Generator │
+│                    COUCHE MÉTIER                           │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐          │
+│  │ OCR Pipeline│ │ ML Models   │ │ RL System   │          │
+│  │ Preprocessing│ │ SHAP        │ │ Retraining  │          │
+│  └─────────────┘ └─────────────┘ └─────────────┘          │
 └─────────────────────────────────────────────────────────────┘
-                                │
 ┌─────────────────────────────────────────────────────────────┐
-│                    COUCHE DONNÉES                           │
-├─────────────────────────────────────────────────────────────┤
-│  PostgreSQL  │  SQLite (RL)  │  File Storage  │  Redis Cache │
+│                    COUCHE DONNÉES                          │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐          │
+│  │ PostgreSQL  │ │ Redis Cache │ │ File Storage│          │
+│  │ (Données)   │ │ (Sessions)  │ │ (Modèles)   │          │
+│  └─────────────┘ └─────────────┘ └─────────────┘          │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Modules fonctionnels principaux :**
+### 3.2.2 Composants Principaux
 
-1. **Module de Prédiction (Prediction Engine)**
-   - Analyse des déclarations
-   - Application des modèles ML
-   - Calcul des probabilités de fraude
-   - Génération des décisions
-
-2. **Module d'Apprentissage par Renforcement (RL Engine)**
-   - Gestion des contextes
-   - Optimisation des décisions
-   - Mise à jour des modèles
-   - Gestion des profils d'inspecteurs
-
-3. **Module de Feedback (Feedback Engine)**
-   - Collecte des retours terrain
-   - Validation des prédictions
-   - Mise à jour des modèles
-   - Calcul de la qualité du feedback
-
-4. **Module de Génération de PV (PV Engine)**
-   - Création automatique des procès-verbaux
-   - Personnalisation selon le contexte
-   - Génération de rapports
-   - Export des documents
-
-5. **Module d'Analytics (Analytics Engine)**
-   - Calcul des métriques de performance
-   - Génération de tableaux de bord
-   - Analyse des tendances
-   - Reporting automatisé
-
-#### 3.2.5 Outils utilisés
-
-**Développement Backend :**
-- **Python 3.9+** : Langage principal
-- **FastAPI** : Framework web moderne et performant
-- **SQLAlchemy** : ORM pour la gestion des données
-- **Pydantic** : Validation des données
-- **Uvicorn** : Serveur ASGI
-
-**Machine Learning et IA :**
-- **Scikit-learn** : Modèles de base et preprocessing
-- **XGBoost** : Modèle de gradient boosting
-- **CatBoost** : Modèle optimisé pour données catégorielles
-- **NumPy/Pandas** : Manipulation des données
-- **Joblib** : Sérialisation des modèles
-
-**Base de données :**
-- **PostgreSQL** : Base de données relationnelle principale pour le contrôle différé
-- **SQLite** : Base de données légère pour les données RL et apprentissage
-- **Redis** : Cache et session store
-- **Import GAINDE** : Export/Import des données depuis GAINDE pour analyse différée
-
-**Développement Frontend :**
-- **Flutter** : Framework cross-platform
-- **Dart** : Langage de programmation
-- **Provider** : Gestion d'état
-- **HTTP** : Communication avec l'API
-- **SharedPreferences** : Persistance des données utilisateur
-- **Timer** : Rafraîchissement automatique des dashboards
-- **AnimationController** : Animations et transitions fluides
-
-**Système de Profils et Sécurité :**
-- **RouteGuard** : Protection des routes par profil utilisateur
-- **UserProfile** : Gestion des profils (Inspecteur, Expert ML, Chef de Service)
-- **Middleware de sécurité** : Vérification des permissions
-- **Authentification par identifiants** : Système de connexion sécurisé
-
-**Dashboards Temps Réel :**
-- **MLDashboardScreen** : Surveillance des modèles ML en temps réel
-- **DashboardScreen** : Dashboard de supervision pour Chef de Service
-- **Détection de drift** : Surveillance automatique des performances
-- **Métriques de calibration** : Brier Score, ECE, BSS
-- **Système d'alertes** : Notifications intelligentes
-
-**Communication Temps Réel :**
-- **WebSockets** : Communication bidirectionnelle
-- **Rafraîchissement automatique** : Mise à jour toutes les 30 secondes
-- **Persistance des données** : Sauvegarde automatique des sessions
-- **Synchronisation multi-bases** : PostgreSQL + SQLAlchemy
-
-**DevOps et Déploiement :**
-- **Docker** : Conteneurisation
-- **Docker Compose** : Orchestration des services
-- **Git** : Contrôle de version
-- **GitHub** : Hébergement du code
-- **Git LFS** : Gestion des fichiers volumineux (modèles ML)
-
-**Monitoring et Logging :**
-- **Python Logging** : Système de logs
-- **Prometheus** : Monitoring des métriques
-- **Grafana** : Visualisation des données
-- **Surveillance des modèles** : Détection de drift et dégradation
-- **Métriques de performance** : Temps de réponse, précision, recall
-
-### 3.3 Conception détaillée du système de prédiction
-
-#### 3.3.1 Entité manipulée : Déclaration en douane
-
-**Description de l'entité :**
-La déclaration en douane est l'entité centrale du système. Elle représente un document officiel soumis par un importateur pour déclarer des marchandises entrant sur le territoire national.
-
-**Caractéristiques (attributs) de l'entité :**
+**1. Pipeline OCR et Preprocessing :**
 
 ```python
-class Declaration:
-    # Identifiants
-    declaration_id: str          # Identifiant unique
-    chapter_id: str             # Chapitre douanier (30, 84, 85)
-    
-    # Informations importateur
-    importer_name: str          # Nom de l'importateur
-    importer_id: str            # Identifiant importateur
-    importer_history_score: float # Score historique
-    
-    # Informations marchandises
-    product_description: str    # Description des marchandises
-    product_category: str       # Catégorie de produit
-    quantity: float            # Quantité
-    unit_price: float          # Prix unitaire
-    total_value: float         # Valeur totale
-    
-    # Informations commerciales
-    country_origin: str        # Pays d'origine
-    country_export: str        # Pays d'exportation
-    transport_mode: str        # Mode de transport
-    port_entry: str           # Port d'entrée
-    
-    # Informations temporelles
-    submission_date: datetime  # Date de soumission
-    expected_arrival: datetime # Date d'arrivée prévue
-    seasonal_factor: float     # Facteur saisonnier
-    
-    # Informations de contrôle
-    inspection_status: str     # Statut d'inspection
-    fraud_probability: float   # Probabilité de fraude (0-1)
-    decision: str             # Décision (conforme/zone_grise/fraude)
-    confidence_score: float   # Score de confiance
-    
-    # Documents associés
-    documents: List[Document]  # Liste des documents
-    inspection_result: InspectionResult # Résultat d'inspection
+class OCRPipeline:
+    def process_document(self, file_path: str, chapter: str) -> Dict[str, Any]:
+        """Pipeline complet de traitement des documents"""
+        
+        # 1. Détection du type de fichier
+        file_type = self.detect_file_type(file_path)
+        
+        # 2. Extraction des données
+        if file_type == "csv":
+            data = self.process_csv(file_path)
+        elif file_type == "pdf":
+            data = self.process_pdf(file_path)
+        elif file_type == "image":
+            data = self.process_image(file_path)
+        
+        # 3. Preprocessing avancé
+        processed_data = self.advanced_preprocessing(data, chapter)
+        
+        # 4. Validation et normalisation
+        validated_data = self.validate_and_normalize(processed_data)
+        
+        return validated_data
 ```
 
-#### 3.3.2 Variable cible à prédire
+**2. Système ML-RL Hybride :**
 
-**Variable cible :** `is_fraud` (Boolean)
-- **Format :** Booléen (True/False)
-- **Signification :** 
-  - `True` : La déclaration contient des éléments de fraude
-  - `False` : La déclaration est conforme
+```python
+class MLRLHybridSystem:
+    def __init__(self, chapter: str):
+        self.ml_model = self.load_ml_model(chapter)
+        self.rl_manager = self.load_rl_manager(chapter)
+        self.shap_explainer = self.load_shap_explainer(chapter)
+    
+    def predict_with_explanation(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Prédiction avec explication SHAP"""
+        
+        # 1. Prédiction ML
+        ml_probability = self.ml_model.predict_proba(data)[0][1]
+        
+        # 2. Décision RL
+        rl_decision = self.rl_manager.predict(data, ml_probability)
+        
+        # 3. Explication SHAP
+        shap_values = self.shap_explainer.shap_values(data)
+        
+        return {
+            'ml_probability': ml_probability,
+            'rl_decision': rl_decision,
+            'shap_explanation': shap_values,
+            'confidence_score': self.calculate_confidence(ml_probability, rl_decision)
+        }
+```
 
-**Classes de décision :**
-1. **Conforme** : Probabilité < 0.3 (30%)
-2. **Zone grise** : Probabilité entre 0.3 et 0.7 (30%-70%)
-3. **Fraude** : Probabilité > 0.7 (70%)
+**3. Système de Retraining Automatique :**
 
-#### 3.3.3 Variables prédictives
+```python
+class AutoRetrainingSystem:
+    def should_retrain(self, chapter: str) -> bool:
+        """Détermine si un modèle doit être retraîné"""
+        
+        # Conditions de retraining
+        conditions = [
+            self.check_time_interval(chapter),  # 30 jours
+            self.check_feedback_count(chapter),  # 100 nouveaux feedbacks
+            self.check_performance_degradation(chapter),  # F1 < 0.95
+            self.check_drift_detection(chapter)  # Drift significatif
+        ]
+        
+        return any(conditions)
+    
+    def retrain_model(self, chapter: str):
+        """Retraining automatique du modèle"""
+        
+        # 1. Charger les données existantes
+        existing_data = self.load_training_data(chapter)
+        
+        # 2. Récupérer les nouveaux feedbacks
+        new_feedbacks = self.get_new_feedbacks(chapter)
+        
+        # 3. Combiner et retraîner
+        combined_data = self.combine_data(existing_data, new_feedbacks)
+        new_model = self.train_model(combined_data, chapter)
+        
+        # 4. Évaluer et sauvegarder si amélioration
+        if self.evaluate_improvement(new_model, chapter):
+            self.save_model(new_model, chapter)
+            self.update_thresholds(chapter)
+```
 
-**Variables numériques :**
-- `total_value` : Valeur totale de la déclaration
-- `quantity` : Quantité des marchandises
-- `unit_price` : Prix unitaire
-- `importer_history_score` : Score historique de l'importateur
-- `seasonal_factor` : Facteur saisonnier
-- `days_since_last_declaration` : Jours depuis la dernière déclaration
+### 3.2.3 Flux de Données
 
-**Variables catégorielles :**
-- `chapter_id` : Chapitre douanier (30, 84, 85)
-- `country_origin` : Pays d'origine
-- `country_export` : Pays d'exportation
-- `transport_mode` : Mode de transport
-- `port_entry` : Port d'entrée
-- `product_category` : Catégorie de produit
+**Flux principal de prédiction :**
 
-**Variables textuelles :**
-- `product_description` : Description des marchandises
-- `importer_name` : Nom de l'importateur
+```
+1. Upload Document
+   ↓
+2. OCR Extraction
+   ↓
+3. Preprocessing Avancé
+   ↓
+4. Feature Engineering
+   ↓
+5. Prédiction ML
+   ↓
+6. Décision RL
+   ↓
+7. Explication SHAP
+   ↓
+8. Interface Utilisateur
+```
 
-**Variables temporelles :**
-- `submission_hour` : Heure de soumission
-- `submission_day_of_week` : Jour de la semaine
-- `submission_month` : Mois de soumission
+**Flux de feedback et apprentissage :**
 
-#### 3.3.4 Sources des variables prédictives
+```
+1. Décision Inspecteur
+   ↓
+2. Feedback Collection
+   ↓
+3. Drift Detection
+   ↓
+4. Retraining Decision
+   ↓
+5. Model Update
+   ↓
+6. Performance Monitoring
+```
 
-**Base de données GAINDE (export pour contrôle différé) :**
-- Données des déclarations historiques exportées depuis GAINDE
-- Informations sur les importateurs
-- Historique des contrôles
-- Résultats d'inspections
+## 3.3 Modélisation des Données et Processus
 
-**Bases de données externes :**
-- Données économiques (prix de référence)
-- Informations géographiques
-- Données météorologiques (facteurs saisonniers)
-- Indices de corruption par pays
+### 3.3.1 Modèle de Données
 
-**Systèmes internes :**
-- Base de données des importateurs
-- Système de gestion des licences
-- Base de données des produits sensibles
+**Entités principales :**
 
-#### 3.3.5 Construction du tableau de données
+```sql
+-- Table des déclarations
+CREATE TABLE declarations (
+    declaration_id VARCHAR(50) PRIMARY KEY,
+    chapter VARCHAR(10) NOT NULL,
+    annee INTEGER,
+    bureau VARCHAR(10),
+    numero VARCHAR(20),
+    valeur_caf DECIMAL(15,2),
+    poids_net DECIMAL(10,3),
+    pays_origine VARCHAR(3),
+    code_produit VARCHAR(10),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-**Processus d'extraction :**
+-- Table des prédictions
+CREATE TABLE predictions (
+    prediction_id SERIAL PRIMARY KEY,
+    declaration_id VARCHAR(50) REFERENCES declarations(declaration_id),
+    ml_probability DECIMAL(5,4),
+    rl_decision VARCHAR(20),
+    confidence_score DECIMAL(5,4),
+    shap_values JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-1. **Export des données** depuis GAINDE (contrôle différé)
-2. **Import et validation** des données dans InspectIA
-3. **Feature engineering** et création de nouvelles variables
-4. **Encodage** des variables catégorielles
-5. **Normalisation** des variables numériques
-6. **Division** en ensembles d'entraînement/test
+-- Table des feedbacks
+CREATE TABLE advanced_feedbacks (
+    feedback_id SERIAL PRIMARY KEY,
+    declaration_id VARCHAR(50) REFERENCES declarations(declaration_id),
+    inspector_id VARCHAR(50),
+    feedback_type VARCHAR(20), -- 'correct', 'incorrect', 'uncertain'
+    feedback_quality INTEGER, -- 1-5
+    comments TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table des profils d'inspecteurs
+CREATE TABLE inspector_profiles (
+    inspector_id VARCHAR(50) PRIMARY KEY,
+    experience_years INTEGER,
+    specialization VARCHAR(50),
+    accuracy_rate DECIMAL(5,4),
+    total_decisions INTEGER,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### 3.3.2 Modèle de Processus
+
+**Processus de prédiction :**
+
+```mermaid
+graph TD
+    A[Upload Document] --> B[OCR Processing]
+    B --> C[Data Validation]
+    C --> D[Preprocessing]
+    D --> E[Feature Engineering]
+    E --> F[ML Prediction]
+    F --> G[RL Decision]
+    G --> H[SHAP Explanation]
+    H --> I[User Interface]
+    I --> J[Inspector Feedback]
+    J --> K[Update RL System]
+    K --> L[Performance Monitoring]
+```
+
+**Processus de retraining :**
+
+```mermaid
+graph TD
+    A[Feedback Collection] --> B[Drift Detection]
+    B --> C{Retraining Needed?}
+    C -->|Yes| D[Data Preparation]
+    C -->|No| E[Continue Monitoring]
+    D --> F[Model Training]
+    F --> G[Performance Evaluation]
+    G --> H{Improvement?}
+    H -->|Yes| I[Deploy New Model]
+    H -->|No| J[Keep Current Model]
+    I --> K[Update Thresholds]
+    J --> E
+    K --> E
+```
+
+## 3.4 Conception des Modèles ML/RL
+
+### 3.4.1 Architecture des Modèles ML
 
 **Pipeline de preprocessing :**
 
 ```python
-class DataPreprocessor:
+class PreprocessingPipeline:
+    def __init__(self, chapter: str):
+        self.chapter = chapter
+        self.numeric_transformer = Pipeline([
+            ('imputer', SimpleImputer(strategy='median')),
+            ('scaler', StandardScaler())
+        ])
+        self.categorical_transformer = Pipeline([
+            ('imputer', SimpleImputer(strategy='constant', fill_value='unknown')),
+            ('onehot', OneHotEncoder(handle_unknown='ignore'))
+        ])
+    
+    def create_preprocessor(self, X: pd.DataFrame) -> ColumnTransformer:
+        """Création du préprocesseur adapté au chapitre"""
+        
+        numeric_features = self.get_numeric_features()
+        categorical_features = self.get_categorical_features()
+        
+        preprocessor = ColumnTransformer(
+            transformers=[
+                ('num', self.numeric_transformer, numeric_features),
+                ('cat', self.categorical_transformer, categorical_features)
+            ]
+        )
+        
+        return preprocessor
+```
+
+**Modèles ML optimisés :**
+
+```python
+class OptimizedMLModels:
+    def __init__(self, chapter: str):
+        self.chapter = chapter
+        self.models = {
+            'xgboost': XGBClassifier(
+                n_estimators=100,
+                max_depth=6,
+                learning_rate=0.1,
+                random_state=42,
+                eval_metric='logloss'
+            ),
+            'lightgbm': LGBMClassifier(
+                n_estimators=100,
+                max_depth=6,
+                learning_rate=0.1,
+                random_state=42,
+                class_weight='balanced'
+            ),
+            'catboost': CatBoostClassifier(
+                iterations=100,
+                depth=6,
+                learning_rate=0.1,
+                random_seed=42,
+                verbose=False
+            )
+        }
+    
+    def train_models(self, X_train, y_train, X_val, y_val):
+        """Entraînement des modèles avec validation"""
+        
+        results = {}
+        for name, model in self.models.items():
+            # Création du pipeline complet
+            pipeline = Pipeline([
+                ('preprocessor', self.create_preprocessor(X_train)),
+                ('classifier', model)
+            ])
+            
+            # Entraînement
+            pipeline.fit(X_train, y_train)
+            
+            # Évaluation
+            y_pred = pipeline.predict(X_val)
+            y_pred_proba = pipeline.predict_proba(X_val)[:, 1]
+            
+            results[name] = {
+                'model': pipeline,
+                'f1_score': f1_score(y_val, y_pred),
+                'auc_score': roc_auc_score(y_val, y_pred_proba),
+                'precision': precision_score(y_val, y_pred),
+                'recall': recall_score(y_val, y_pred)
+            }
+        
+        return results
+```
+
+### 3.4.2 Architecture du Système RL
+
+**Gestionnaire RL avancé :**
+
+```python
+class AdvancedRLManager:
+    def __init__(self, chapter: str, level: str = "expert"):
+        self.chapter = chapter
+        self.level = level
+        self.bandit = AdvancedEpsilonGreedyBandit(
+            epsilon=0.1,
+            strategy="hybrid"
+        )
+        self.context_store = AdvancedRLStore()
+        self.inspector_profiles = {}
+    
+    def predict(self, context: Dict[str, Any], ml_probability: float) -> Dict[str, Any]:
+        """Prédiction RL avec contexte enrichi"""
+        
+        # 1. Génération de la clé contextuelle
+        context_key = self.generate_context_key(context)
+        
+        # 2. Récupération des statistiques contextuelles
+        context_stats = self.context_store.get_context_stats(context_key)
+        
+        # 3. Prédiction du bandit
+        action, exploration_used = self.bandit.predict(
+            context_stats, ml_probability
+        )
+        
+        # 4. Calcul du score de confiance
+        confidence = self.calculate_confidence(
+            ml_probability, context_stats, exploration_used
+        )
+        
+        return {
+            'action': action,
+            'confidence': confidence,
+            'exploration_used': exploration_used,
+            'context_key': context_key
+        }
+    
+    def add_feedback(self, context_key: str, action: str, reward: float, inspector_id: str):
+        """Ajout de feedback et mise à jour du système"""
+        
+        # 1. Mise à jour du bandit
+        self.bandit.update(context_key, action, reward)
+        
+        # 2. Mise à jour du profil inspecteur
+        self.update_inspector_profile(inspector_id, action, reward)
+        
+        # 3. Vérification du retraining
+        if self.should_trigger_retraining():
+            self.trigger_ml_retraining()
+```
+
+**Algorithme de bandit multi-bras :**
+
+```python
+class AdvancedEpsilonGreedyBandit:
+    def __init__(self, epsilon: float = 0.1, strategy: str = "hybrid"):
+        self.epsilon = epsilon
+        self.strategy = strategy
+        self.arm_stats = defaultdict(lambda: {
+            'count': 0,
+            'total_reward': 0.0,
+            'average_reward': 0.0,
+            'confidence_interval': 0.0
+        })
+    
+    def predict(self, context_stats: Dict, ml_probability: float) -> Tuple[str, bool]:
+        """Prédiction avec exploration/exploitation"""
+        
+        if random.random() < self.epsilon:
+            # Exploration
+            action = self.explore(context_stats)
+            exploration_used = True
+        else:
+            # Exploitation
+            action = self.exploit(context_stats, ml_probability)
+            exploration_used = False
+        
+        return action, exploration_used
+    
+    def exploit(self, context_stats: Dict, ml_probability: float) -> str:
+        """Exploitation basée sur les statistiques et probabilité ML"""
+        
+        # Combinaison des statistiques RL et probabilité ML
+        combined_score = self.combine_scores(context_stats, ml_probability)
+        
+        if combined_score > 0.7:
+            return "fraude"
+        elif combined_score < 0.3:
+            return "conforme"
+        else:
+            return "zone_grise"
+```
+
+## 3.5 Architecture Technique et Choix Technologiques
+
+### 3.5.1 Stack Technologique
+
+**Backend :**
+- **Framework** : FastAPI (Python 3.9+)
+- **Base de données** : PostgreSQL 14+
+- **Cache** : Redis 6+
+- **Queue** : Celery avec Redis
+- **ML Libraries** : scikit-learn, XGBoost, LightGBM, CatBoost
+- **RL Libraries** : Custom implementation
+- **Explicabilité** : SHAP, LIME
+
+**Frontend :**
+- **Framework** : Flutter 3.x avec Dart
+- **Architecture** : StatefulWidget avec ChangeNotifier
+- **Navigation** : Named routes avec gestion des permissions par rôle
+- **Services** : CompleteBackendService (98 endpoints backend centralisés)
+- **État** : Gestion locale + rafraîchissement automatique (30s)
+- **UI Components** : Material Design 3 avec design system institutionnel
+- **Communication** : HTTP multipart avec sauvegarde PostgreSQL
+- **Authentification** : Multi-rôles (Inspecteur, Expert ML, Chef de Service)
+
+**Infrastructure :**
+- **Containerisation** : Docker, Docker Compose
+- **Orchestration** : Kubernetes (optionnel)
+- **Monitoring** : Prometheus, Grafana
+- **Logging** : ELK Stack (Elasticsearch, Logstash, Kibana)
+- **CI/CD** : GitHub Actions
+
+### 3.5.3 Architecture de Déploiement
+
+**Environnement de développement :**
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Flutter App   │    │   FastAPI       │    │   PostgreSQL    │
+│   (Local)       │◄──►│   (Local)       │◄──►│   (Local)       │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+**Environnement de production :**
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Load Balancer │    │   FastAPI       │    │   PostgreSQL    │
+│   (Nginx)       │◄──►│   (Multiple     │◄──►│   (Primary +    │
+│                 │    │   Instances)    │    │   Replica)      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                              │
+                              ▼
+                       ┌─────────────────┐
+                       │   Redis Cache   │
+                       │   (Cluster)     │
+                       └─────────────────┘
+```
+
+### 3.5.4 Sécurité et Performance
+
+**Sécurité :**
+- **Authentification** : JWT avec refresh tokens
+- **Autorisation** : RBAC (Role-Based Access Control)
+- **Chiffrement** : TLS 1.3, AES-256 pour les données sensibles
+- **Validation** : Pydantic pour la validation des données
+- **Rate Limiting** : Protection contre les attaques DDoS
+
+**Performance :**
+- **Cache** : Redis pour les sessions et données fréquentes
+- **Optimisation DB** : Index, requêtes optimisées, connection pooling
+- **Async/Await** : FastAPI pour la concurrence
+- **CDN** : Distribution des assets statiques
+- **Monitoring** : Métriques de performance en temps réel
+- **Contrôles aléatoires** : Inefficacité, manque de ciblage
+- **Décisions subjectives** : Incohérence, difficulté de justification
+- **Pas de feedback** : Amélioration limitée
+
+**Processus cible (TO-BE) :**
+
+```
+1. Upload document → 2. OCR automatique → 3. Extraction features → 4. Prédiction ML → 5. Explication SHAP → 6. Décision assistée → 7. Feedback → 8. Amélioration continue
+```
+
+**Améliorations apportées :**
+- **Automatisation** : OCR et extraction automatiques
+- **Intelligence** : Prédiction ML avec explications
+- **Ciblage** : Contrôles basés sur le risque
+- **Apprentissage** : Feedback et amélioration continue
+
+### 3.1.3 Spécification des Besoins Fonctionnels
+
+**Besoins fonctionnels principaux :**
+
+**RF001 - Gestion des Déclarations :**
+- RF001.1 : Upload de documents (PDF, images, formulaires)
+- RF001.2 : OCR automatique avec correction d'erreurs
+- RF001.3 : Extraction automatique des champs
+- RF001.4 : Validation et normalisation des données
+- RF001.5 : Stockage sécurisé des déclarations
+
+**RF002 - Prédiction de Fraude :**
+- RF002.1 : Prédiction ML par chapitre tarifaire
+- RF002.2 : Calcul de probabilité de fraude
+- RF002.3 : Classification (conforme/suspect/fraude)
+- RF002.4 : Application des seuils RL adaptatifs
+- RF002.5 : Historique des prédictions
+
+**RF003 - Explicabilité :**
+- RF003.1 : Calcul des valeurs SHAP
+- RF003.2 : Explication des décisions
+- RF003.3 : Identification des features importantes
+- RF003.4 : Visualisation des explications
+- RF003.5 : Export des rapports d'explication
+
+**RF004 - Interface Utilisateur :**
+- RF004.1 : Interface adaptée par rôle
+- RF004.2 : Dashboards temps réel
+- RF004.3 : Gestion des alertes
+- RF004.4 : Rapports et statistiques
+- RF004.5 : Recherche et filtrage
+
+**RF005 - Gestion des Modèles :**
+- RF005.1 : Entraînement des modèles ML
+- RF005.2 : Monitoring des performances
+- RF005.3 : Détection de drift
+- RF005.4 : Retraining automatique
+- RF005.5 : Gestion des versions
+
+### 3.1.4 Spécification des Besoins Non-Fonctionnels
+
+**Performance :**
+- **Temps de réponse** : < 5 secondes pour une prédiction complète
+- **Débit** : 1000 déclarations/heure minimum
+- **Disponibilité** : 99.5% uptime
+- **Scalabilité** : Support de 10,000 utilisateurs simultanés
+
+**Sécurité :**
+- **Authentification** : Multi-facteurs obligatoire
+- **Autorisation** : Contrôle d'accès basé sur les rôles
+- **Chiffrement** : Données chiffrées en transit et au repos
+- **Audit** : Traçabilité complète des actions
+
+**Fiabilité :**
+- **Résilience** : Tolérance aux pannes
+- **Sauvegarde** : Sauvegarde automatique quotidienne
+- **Récupération** : RTO < 4 heures, RPO < 1 heure
+- **Monitoring** : Surveillance continue 24/7
+
+**Maintenabilité :**
+- **Modularité** : Architecture modulaire et extensible
+- **Documentation** : Documentation technique complète
+- **Tests** : Couverture de tests > 80%
+- **Déploiement** : Déploiement automatisé
+
+## 3.2 Architecture Fonctionnelle INSPECT_IA
+
+### 3.2.1 Vue d'Ensemble de l'Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        INSPECT_IA SYSTEM                        │
+├─────────────────────────────────────────────────────────────────┤
+│  FRONTEND LAYER (Flutter)                                      │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐              │
+│  │ Inspecteur  │ │ Expert ML   │ │ Chef Service│              │
+│  │ Interface   │ │ Dashboard   │ │ Dashboard   │              │
+│  └─────────────┘ └─────────────┘ └─────────────┘              │
+├─────────────────────────────────────────────────────────────────┤
+│  API GATEWAY LAYER                                             │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐              │
+│  │ Auth        │ │ Rate        │ │ Load        │              │
+│  │ Service     │ │ Limiting    │ │ Balancing   │              │
+│  └─────────────┘ └─────────────┘ └─────────────┘              │
+├─────────────────────────────────────────────────────────────────┤
+│  BUSINESS LOGIC LAYER (FastAPI)                                │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐              │
+│  │ Upload      │ │ ML Engine   │ │ RL Engine   │              │
+│  │ Service     │ │ Service     │ │ Service     │              │
+│  └─────────────┘ └─────────────┘ └─────────────┘              │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐              │
+│  │ SHAP        │ │ Analytics   │ │ Monitoring  │              │
+│  │ Service     │ │ Service     │ │ Service     │              │
+│  └─────────────┘ └─────────────┘ └─────────────┘              │
+├─────────────────────────────────────────────────────────────────┤
+│  DATA LAYER (PostgreSQL)                                       │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐              │
+│  │ Declarations│ │ Predictions │ │ Features    │              │
+│  │ Tables      │ │ Tables      │ │ Tables      │              │
+│  └─────────────┘ └─────────────┘ └─────────────┘              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 3.2.4 Architecture Frontend (Flutter)
+
+**Architecture technique :**
+- **Framework** : Flutter 3.x avec Dart
+- **Pattern** : StatefulWidget avec ChangeNotifier
+- **Navigation** : Named routes avec gestion des permissions par rôle
+- **Services** : CompleteBackendService (98 endpoints backend centralisés)
+- **État** : Gestion locale + rafraîchissement automatique (30s)
+
+**Écrans par rôle :**
+
+**Inspecteur (`inspecteur`) :**
+- **Pages** : `/home`, `/upload`, `/analysis`, `/pv`, `/feedback`, `/pv-list`, `/pv-detail`
+- **Fonctionnalités** : Upload multi-formats, analyse avec SHAP, feedback, génération PV
+- **Permissions** : Upload documents, voir prédictions, générer PV, fournir feedback, voir analytics de fraude
+
+**Expert ML (`expert_ml`) :**
+- **Pages** : Toutes pages Inspecteur + `/rl-performance`, `/rl-analytics`, `/backend-test`, `/ml-dashboard`, `/postgresql-test`
+- **Fonctionnalités** : Surveillance avancée des modèles, analytics RL, retraining, diagnostic système
+- **Permissions** : Toutes permissions Inspecteur + surveillance ML/RL, configuration modèles, gestion seuils, monitoring drift
+
+**Chef de Service (`chef_service`) :**
+- **Pages** : `/dashboard`, `/analysis`, `/backend-test`, `/postgresql-test`
+- **Fonctionnalités** : Supervision globale, analytics de performance, gestion des équipes
+- **Permissions** : Vue d'ensemble, analytics globales, KPIs, gestion alertes, export rapports
+
+**Services et Communication :**
+- **CompleteBackendService** : Service unifié pour 98 endpoints backend
+  - Router Principal (/predict) : 84 endpoints
+  - ML Router (/ml) : 7 endpoints
+  - PostgreSQL Router (/api/v2) : 7 endpoints
+- **UserSessionService** : Gestion des sessions et permissions
+- **Upload avec sauvegarde PostgreSQL** : Support multipart avec persistance
+- **Gestion d'erreurs** : Retry automatique et messages contextuels
+
+**Design System :**
+- **Couleurs institutionnelles** : Vert douanes, Jaune doré, Rouge discret, Bleu nuit
+- **Couleurs par chapitre** : Bleu pharmaceutique, Marron machines, Gris-bleu électrique
+- **Configuration centralisée** : AppConfig avec vraies métriques des modèles
+
+**2. API Gateway :**
+- **Authentification** : JWT tokens, refresh tokens
+- **Autorisation** : RBAC (Role-Based Access Control)
+- **Rate Limiting** : Protection contre les abus
+- **Load Balancing** : Distribution de charge
+- **Monitoring** : Logs, métriques, alertes
+
+**3. Business Logic Layer :**
+- **Upload Service** : Gestion des fichiers, OCR, validation
+- **ML Engine** : Modèles XGBoost, CatBoost, prédictions
+- **RL Engine** : Optimisation des seuils, apprentissage
+- **SHAP Service** : Calcul des explications, interprétabilité
+- **Analytics Service** : Statistiques, rapports, KPI
+- **Monitoring Service** : Surveillance, alertes, maintenance
+
+**4. Data Layer :**
+- **Declarations** : Stockage des données de base
+- **Predictions** : Historique des prédictions
+- **Features** : Features extraites et calculées
+- **Users** : Gestion des utilisateurs et rôles
+- **Feedback** : Retours d'expérience et amélioration
+
+### 3.2.3 Flux de Données
+
+**Flux principal de prédiction :**
+
+```
+1. Upload Document → 2. OCR Processing → 3. Feature Extraction → 4. ML Prediction → 5. SHAP Explanation → 6. RL Threshold → 7. Final Decision → 8. Storage → 9. User Interface
+```
+
+**Flux de feedback :**
+
+```
+1. User Decision → 2. Feedback Collection → 3. RL Learning → 4. Model Update → 5. Performance Monitoring
+```
+
+**Flux de monitoring :**
+
+```
+1. System Metrics → 2. Performance Data → 3. Drift Detection → 4. Alert Generation → 5. Dashboard Update
+```
+
+## 3.3 Modélisation des Données et Processus
+
+### 3.3.1 Modèle de Données Conceptuel
+
+**Entités principales :**
+
+**Declaration :**
+- **Identifiants** : declaration_id, numero_declaration
+- **Données de base** : date_declaration, type_declaration, bureau_douane
+- **Informations importateur** : nom_importateur, adresse, telephone
+- **Informations marchandises** : description, quantite, valeur, pays_origine
+- **Classification** : code_sh, chapitre_tarifaire, taux_droits
+- **Métadonnées** : created_at, updated_at, status
+
+**Prediction :**
+- **Identifiants** : prediction_id, declaration_id
+- **Résultats ML** : fraud_probability, predicted_class, confidence_score
+- **Seuils RL** : threshold_used, rl_decision
+- **Métadonnées** : model_version, created_at, processing_time
+
+**Feature :**
+- **Identifiants** : feature_id, prediction_id
+- **Données** : feature_name, feature_value, feature_type
+- **SHAP** : shap_value, shap_importance, feature_impact
+- **Métadonnées** : created_at, feature_source
+
+**User :**
+- **Identifiants** : user_id, username, email
+- **Profil** : role, permissions, profile_data
+- **Sécurité** : password_hash, last_login, failed_attempts
+- **Métadonnées** : created_at, updated_at, status
+
+**Feedback :**
+- **Identifiants** : feedback_id, prediction_id, user_id
+- **Données** : user_decision, confidence_level, comments
+- **Évaluation** : accuracy_rating, usefulness_rating
+- **Métadonnées** : created_at, feedback_type
+
+### 3.3.2 Modèle de Données Logique
+
+**Schéma de base de données PostgreSQL :**
+
+```sql
+-- Table des déclarations
+CREATE TABLE declarations (
+    declaration_id SERIAL PRIMARY KEY,
+    numero_declaration VARCHAR(50) UNIQUE NOT NULL,
+    date_declaration DATE NOT NULL,
+    type_declaration VARCHAR(20) NOT NULL,
+    bureau_douane VARCHAR(50) NOT NULL,
+    nom_importateur VARCHAR(200) NOT NULL,
+    adresse_importateur TEXT,
+    telephone_importateur VARCHAR(20),
+    description_marchandises TEXT NOT NULL,
+    quantite DECIMAL(15,3) NOT NULL,
+    valeur_declaree DECIMAL(15,2) NOT NULL,
+    pays_origine VARCHAR(50) NOT NULL,
+    code_sh VARCHAR(10) NOT NULL,
+    chapitre_tarifaire VARCHAR(3) NOT NULL,
+    taux_droits DECIMAL(5,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'active'
+);
+
+-- Table des prédictions
+CREATE TABLE predictions (
+    prediction_id SERIAL PRIMARY KEY,
+    declaration_id INTEGER REFERENCES declarations(declaration_id),
+    model_name VARCHAR(50) NOT NULL,
+    model_version VARCHAR(20) NOT NULL,
+    fraud_probability DECIMAL(5,4) NOT NULL,
+    predicted_class VARCHAR(20) NOT NULL,
+    confidence_score DECIMAL(5,4) NOT NULL,
+    threshold_used DECIMAL(5,4) NOT NULL,
+    rl_decision VARCHAR(20) NOT NULL,
+    processing_time_ms INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table des features
+CREATE TABLE features (
+    feature_id SERIAL PRIMARY KEY,
+    prediction_id INTEGER REFERENCES predictions(prediction_id),
+    feature_name VARCHAR(100) NOT NULL,
+    feature_value DECIMAL(15,6),
+    feature_type VARCHAR(20) NOT NULL,
+    shap_value DECIMAL(10,6),
+    shap_importance DECIMAL(10,6),
+    feature_impact VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table des utilisateurs
+CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role VARCHAR(20) NOT NULL,
+    permissions JSONB,
+    profile_data JSONB,
+    last_login TIMESTAMP,
+    failed_attempts INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'active'
+);
+
+-- Table des feedbacks
+CREATE TABLE feedbacks (
+    feedback_id SERIAL PRIMARY KEY,
+    prediction_id INTEGER REFERENCES predictions(prediction_id),
+    user_id INTEGER REFERENCES users(user_id),
+    user_decision VARCHAR(20) NOT NULL,
+    confidence_level INTEGER CHECK (confidence_level BETWEEN 1 AND 5),
+    comments TEXT,
+    accuracy_rating INTEGER CHECK (accuracy_rating BETWEEN 1 AND 5),
+    usefulness_rating INTEGER CHECK (usefulness_rating BETWEEN 1 AND 5),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    feedback_type VARCHAR(20) DEFAULT 'user_feedback'
+);
+```
+
+### 3.3.3 Relations et Contraintes
+
+**Relations principales :**
+- **Declaration → Prediction** : 1:N (une déclaration peut avoir plusieurs prédictions)
+- **Prediction → Feature** : 1:N (une prédiction a plusieurs features)
+- **User → Feedback** : 1:N (un utilisateur peut donner plusieurs feedbacks)
+- **Prediction → Feedback** : 1:N (une prédiction peut recevoir plusieurs feedbacks)
+
+**Contraintes d'intégrité :**
+- **Clés étrangères** : Référentielle entre toutes les tables liées
+- **Unicité** : Numéro de déclaration unique, username unique, email unique
+- **Valeurs par défaut** : Timestamps automatiques, statuts par défaut
+- **Contrôles** : Valeurs dans des plages acceptables, formats validés
+
+**Index pour la performance :**
+```sql
+-- Index sur les colonnes fréquemment utilisées
+CREATE INDEX idx_declarations_chapitre ON declarations(chapitre_tarifaire);
+CREATE INDEX idx_declarations_date ON declarations(date_declaration);
+CREATE INDEX idx_predictions_declaration ON predictions(declaration_id);
+CREATE INDEX idx_predictions_created_at ON predictions(created_at);
+CREATE INDEX idx_features_prediction ON features(prediction_id);
+CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX idx_feedbacks_prediction ON feedbacks(prediction_id);
+```
+
+## 3.4 Conception des Modèles ML/RL
+
+### 3.4.1 Architecture des Modèles ML
+
+**Modèles par chapitre tarifaire :**
+
+**Chapitre 30 (Médicaments) - CatBoost :**
+```python
+class CatBoostFraudDetector:
     def __init__(self):
-        self.scaler = StandardScaler()
-        self.encoder = LabelEncoder()
-        self.feature_selector = SelectKBest()
+        self.model = CatBoostClassifier(
+            iterations=1000,
+            learning_rate=0.1,
+            depth=8,
+            loss_function='Logloss',
+            eval_metric='F1',
+            random_seed=42,
+            cat_features=['pays_origine', 'bureau_douane', 'type_declaration'],
+            verbose=False
+        )
     
-    def preprocess(self, data):
-        # Nettoyage des données
-        data = self.clean_data(data)
+    def get_features(self):
+        return [
+            # Features tarifaires
+            'valeur_declaree', 'quantite', 'prix_unitaire',
+            'taux_droits', 'code_sh_complet',
+            
+            # Features de cohérence
+            'prix_vs_marche', 'quantite_vs_habituel',
+            'pays_origine_risque', 'bureau_douane_risque',
+            
+            # Features de risque
+            'importateur_risque', 'historique_fraude',
+            'saisonnalite', 'tendance_prix'
+        ]
+```
+
+**Chapitre 84 (Machines) - XGBoost :**
+```python
+class XGBoostFraudDetector:
+    def __init__(self):
+        self.model = XGBClassifier(
+            n_estimators=1000,
+            learning_rate=0.1,
+            max_depth=8,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            random_state=42,
+            eval_metric='logloss'
+        )
+    
+    def get_features(self):
+        return [
+            # Features techniques
+            'valeur_declaree', 'poids_net', 'poids_brut',
+            'classification_technique', 'marque_modele',
+            
+            # Features de cohérence
+            'valeur_vs_estimation', 'poids_vs_valeur',
+            'marque_consistance', 'modele_consistance',
+            
+            # Features de risque
+            'pays_origine_technologie', 'importateur_specialise',
+            'historique_contrefacon', 'tendance_technologique'
+        ]
+```
+
+**Chapitre 85 (Électronique) - XGBoost :**
+```python
+class XGBoostElectronicsDetector:
+    def __init__(self):
+        self.model = XGBClassifier(
+            n_estimators=1000,
+            learning_rate=0.1,
+            max_depth=8,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            random_state=42,
+            eval_metric='logloss'
+        )
+    
+    def get_features(self):
+        return [
+            # Features électroniques
+            'valeur_declaree', 'puissance', 'frequence',
+            'technologie', 'generation', 'compatibilite',
+            
+            # Features de cohérence
+            'prix_vs_technologie', 'puissance_vs_prix',
+            'compatibilite_marche', 'generation_consistance',
+            
+            # Features de risque
+            'contrefacon_risque', 'reexportation_risque',
+            'marque_risque', 'pays_origine_risque'
+        ]
+```
+
+### 3.4.2 Pipeline de Feature Engineering
+
+**Extraction des features métier :**
+
+```python
+class BusinessFeatureExtractor:
+    def __init__(self):
+        self.market_data = MarketDataProvider()
+        self.risk_database = RiskDatabase()
+        self.historical_data = HistoricalDataProvider()
+    
+    def extract_tariff_features(self, declaration):
+        features = {}
         
-        # Feature engineering
-        data = self.create_features(data)
+        # Prix unitaire
+        features['prix_unitaire'] = declaration['valeur_declaree'] / declaration['quantite']
         
-        # Encodage des variables catégorielles
-        data = self.encode_categorical(data)
+        # Comparaison avec le marché
+        market_price = self.market_data.get_price(declaration['code_sh'])
+        features['prix_vs_marche'] = features['prix_unitaire'] / market_price if market_price else 1.0
         
-        # Normalisation des variables numériques
-        data = self.normalize_numerical(data)
+        # Taux de droits
+        features['taux_droits'] = declaration.get('taux_droits', 0.0)
         
-        # Sélection des features
-        data = self.select_features(data)
+        return features
+    
+    def extract_consistency_features(self, declaration):
+        features = {}
         
-        return data
+        # Cohérence pays-origine
+        features['pays_origine_risque'] = self.risk_database.get_country_risk(
+            declaration['pays_origine']
+        )
+        
+        # Cohérence importateur
+        features['importateur_risque'] = self.risk_database.get_importer_risk(
+            declaration['nom_importateur']
+        )
+        
+        # Historique de fraude
+        features['historique_fraude'] = self.historical_data.get_fraud_history(
+            declaration['nom_importateur']
+        )
+        
+        return features
+    
+    def extract_risk_features(self, declaration):
+        features = {}
+        
+        # Saisonnalité
+        features['saisonnalite'] = self.calculate_seasonality(declaration)
+        
+        # Tendance des prix
+        features['tendance_prix'] = self.calculate_price_trend(declaration)
+        
+        # Anomalies statistiques
+        features['anomalie_statistique'] = self.detect_statistical_anomaly(declaration)
+        
+        return features
 ```
 
-### 3.3 Diagrammes UML de la solution proposée
+### 3.4.3 Système d'Apprentissage par Renforcement
 
-> **Note :** Tous les diagrammes suivants respectent strictement les conventions UML 2.5 et les règles de l'art en ingénierie logicielle.
+**Environnement RL :**
 
-#### 3.3.1 Diagrammes de cas d'utilisation
-
-Les diagrammes de cas d'utilisation définissent les interactions entre les utilisateurs et le système InspectIA. Deux acteurs principaux interagissent avec le système :
-
-1. **Inspecteur des douanes** : Utilisateur principal qui utilise le système pour analyser les déclarations et fournir du feedback
-2. **Expert ML** : Spécialiste en Machine Learning qui optimise les modèles, analyse les performances et configure les seuils de décision
-
-**Diagramme de cas d'utilisation - Inspecteur des douanes :**
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │            Inspecteur des douanes                   │   │
-│  │                                                     │   │
-│  │                    ┌─────────────────┐              │   │
-│  │                    │ InspectIA       │              │   │
-│  │                    │ System          │              │   │
-│  │                    └─────────────────┘              │   │
-│  │                                                     │   │
-│  │  ┌─────────────────────────────────────────────────┐ │   │
-│  │  │ <<include>>                                     │ │   │
-│  │  │ Upload Documents (PDF/CSV)                     │ │   │
-│  │  └─────────────────────────────────────────────────┘ │   │
-│  │                                                     │   │
-│  │  ┌─────────────────────────────────────────────────┐ │   │
-│  │  │ <<include>>                                     │ │   │
-│  │  │ Consult ML-RL Predictions                       │ │   │
-│  │  └─────────────────────────────────────────────────┘ │   │
-│  │                                                     │   │
-│  │  ┌─────────────────────────────────────────────────┐ │   │
-│  │  │ <<include>>                                     │ │   │
-│  │  │ Provide Feedback (RL System)                    │ │   │
-│  │  └─────────────────────────────────────────────────┘ │   │
-│  │                                                     │   │
-│  │  ┌─────────────────────────────────────────────────┐ │   │
-│  │  │ <<include>>                                     │ │   │
-│  │  │ Consult PV List/Details                         │ │   │
-│  │  └─────────────────────────────────────────────────┘ │   │
-│  │                                                     │   │
-│  │  ┌─────────────────────────────────────────────────┐ │   │
-│  │  │ <<include>>                                     │ │   │
-│  │  │ Consult RL Analytics/Performance                │ │   │
-│  │  └─────────────────────────────────────────────────┘ │   │
-│  │                                                     │   │
-│  │  ┌─────────────────────────────────────────────────┐ │   │
-│  │  │ <<include>>                                     │ │   │
-│  │  │ Consult PostgreSQL Status/Backend Test          │ │   │
-│  │  └─────────────────────────────────────────────────┘ │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**Diagramme de cas d'utilisation - Expert ML :**
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │                Expert ML                            │   │
-│  │                                                     │   │
-│  │                    ┌─────────────────┐              │   │
-│  │                    │ InspectIA       │              │   │
-│  │                    │ System          │              │   │
-│  │                    └─────────────────┘              │   │
-│  │                                                     │   │
-│  │  ┌─────────────────────────────────────────────────┐ │   │
-│  │  │ <<include>>                                     │ │   │
-│  │  │ Consult ML-RL Predictions                       │ │   │
-│  │  └─────────────────────────────────────────────────┘ │   │
-│  │                                                     │   │
-│  │  ┌─────────────────────────────────────────────────┐ │   │
-│  │  │ <<include>>                                     │ │   │
-│  │  │ Provide Feedback (RL System)                    │ │   │
-│  │  └─────────────────────────────────────────────────┘ │   │
-│  │                                                     │   │
-│  │  ┌─────────────────────────────────────────────────┐ │   │
-│  │  │ <<include>>                                     │ │   │
-│  │  │ Consult PV List/Details                         │ │   │
-│  │  └─────────────────────────────────────────────────┘ │   │
-│  │                                                     │   │
-│  │  ┌─────────────────────────────────────────────────┐ │   │
-│  │  │ <<include>>                                     │ │   │
-│  │  │ Consult RL Analytics/Performance                │ │   │
-│  │  └─────────────────────────────────────────────────┘ │   │
-│  │                                                     │   │
-│  │  ┌─────────────────────────────────────────────────┐ │   │
-│  │  │ <<include>>                                     │ │   │
-│  │  │ Optimize Decision Thresholds                    │ │   │
-│  │  └─────────────────────────────────────────────────┘ │   │
-│  │                                                     │   │
-│  │  ┌─────────────────────────────────────────────────┐ │   │
-│  │  │ <<include>>                                     │ │   │
-│  │  │ Consult PostgreSQL Status/Backend Test          │ │   │
-│  │  └─────────────────────────────────────────────────┘ │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+```python
+class FraudDetectionRLEnv:
+    def __init__(self, ml_model, threshold_range=(0.1, 0.9)):
+        self.ml_model = ml_model
+        self.threshold_range = threshold_range
+        self.current_threshold = 0.5
+        self.performance_history = []
+        self.feedback_history = []
+        
+    def get_state(self):
+        """État actuel de l'environnement"""
+        return {
+            'current_threshold': self.current_threshold,
+            'recent_performance': self.get_recent_performance(),
+            'feedback_ratio': self.get_feedback_ratio(),
+            'drift_score': self.get_drift_score(),
+            'time_since_update': self.get_time_since_update()
+        }
+    
+    def step(self, action):
+        """Exécution d'une action (ajustement du seuil)"""
+        # Action : ajustement du seuil (-1, 0, 1)
+        threshold_adjustment = action * 0.05
+        new_threshold = self.current_threshold + threshold_adjustment
+        new_threshold = np.clip(new_threshold, *self.threshold_range)
+        
+        # Calcul de la récompense
+        reward = self.calculate_reward(new_threshold)
+        
+        # Mise à jour de l'état
+        self.current_threshold = new_threshold
+        self.performance_history.append(reward)
+        
+        # État suivant
+        next_state = self.get_state()
+        done = self.is_episode_done()
+        
+        return next_state, reward, done, {}
+    
+    def calculate_reward(self, threshold):
+        """Calcul de la récompense basée sur la performance"""
+        # Performance ML avec le nouveau seuil
+        ml_performance = self.ml_model.evaluate_with_threshold(threshold)
+        
+        # Feedback utilisateur récent
+        user_feedback = self.get_recent_user_feedback()
+        
+        # Stabilité du seuil (éviter les oscillations)
+        stability_penalty = -abs(threshold - 0.5) * 0.1
+        
+        # Récompense combinée
+        reward = (
+            ml_performance * 0.6 +      # Performance ML (60%)
+            user_feedback * 0.3 +       # Feedback utilisateur (30%)
+            stability_penalty           # Stabilité (10%)
+        )
+        
+        return reward
 ```
 
-#### 3.3.2 Diagrammes de séquence
+**Agent Q-Learning :**
 
-**Diagramme de séquence - Analyse d'une déclaration avec prédiction de fraude :**
-
-```
-Inspecteur    Flutter    FastAPI    OCRPipeline    MLModel    RLManager    PostgreSQL
-     │           │           │          │            │            │            │
-     │───Upload──│           │          │            │            │            │
-     │   PDF/CSV │           │          │            │            │            │
-     │           │───POST───▶│          │            │            │            │
-     │           │ /predict  │          │            │            │            │
-     │           │ /{chapter}│          │            │            │            │
-     │           │           │───OCR───▶│            │            │            │
-     │           │           │ Process  │            │            │            │
-     │           │           │          │───ML─────▶│            │            │
-     │           │           │          │ Predict   │            │            │
-     │           │           │          │            │───RL─────▶│            │
-     │           │           │          │            │ Choose    │            │
-     │           │           │          │            │            │───Save───▶│
-     │           │           │          │            │            │ Results   │
-     │           │           │◀──Result│◀──Result──│◀──Result──│◀──Result──│
-     │           │◀──Response│          │            │            │            │
-     │◀──Display │           │          │            │            │            │
-     │  Results  │           │          │            │            │            │
-```
-
-#### 3.3.3 Diagrammes de classe
-
-**Diagramme de classe - Architecture complète InspectIA :**
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              AdvancedOCRPipeline                     │   │
-│  │                                                     │   │
-│  │  - CHAPTER_CONFIGS: Dict[str, Dict]                 │   │
-│  │  - _MODEL_CACHE: Dict                               │   │
-│  │  - _CACHE_LOCK: threading.Lock                      │   │
-│  │  - _RL_CACHE: Dict                                  │   │
-│  │  - _RL_CACHE_LOCK: threading.Lock                   │   │
-│  │                                                     │   │
-│  │  + predict_fraud(data: Dict, chapter: str,          │   │
-│  │    level: str) -> Dict[str, Any]                    │   │
-│  │  + run_auto_predict(chapter: str, uploads: List,    │   │
-│  │    declarations: List) -> Dict[str, Any]            │   │
-│  │  + process_ocr_document(image_path: str,            │   │
-│  │    chapter: str, level: str) -> Dict[str, Any]      │   │
-│  │  + predict_fraud_from_ocr_data(ocr_data: Dict,      │   │
-│  │    chapter: str, level: str) -> Dict[str, Any]      │   │
-│  │  + get_chapter_config(chapter: str) -> Dict         │   │
-│  │  + load_decision_thresholds(chapter: str) -> Dict   │   │
-│  │  + process_file_with_ml_prediction(file_path: str,  │   │
-│  │    chapter: str) -> Dict[str, Any]                  │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                          │                                 │
-│                          ▼                                 │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              Chap30SupervisedML                     │   │
-│  │                                                     │   │
-│  │  - data_path: Path                                  │   │
-│  │  - models_dir: Path                                 │   │
-│  │  - results_dir: Path                                │   │
-│  │  - numerical_features: List[str]                    │   │
-│  │  - categorical_features: List[str]                  │   │
-│  │  - business_features_safe: List[str]                │   │
-│  │  - ml_features: List[str]                           │   │
-│  │                                                     │   │
-│  │  + validate_no_data_leakage(df: DataFrame) -> bool  │   │
-│  │  + load_data() -> DataFrame                         │   │
-│  │  + build_preprocessing_pipeline() -> Pipeline       │   │
-│  │  + build_model_pipeline(model_config: Dict) ->      │   │
-│  │    Pipeline                                         │   │
-│  │  + _get_optimized_models_config() -> Dict           │   │
-│  │  + train_models(X_train, y_train, X_val, y_val) ->  │   │
-│  │    Dict[str, Any]                                   │   │
-│  │  + cross_validate_with_regularization(X, y) ->      │   │
-│  │    Dict[str, Any]                                   │   │
-│  │  + evaluate_models(X_test, y_test) -> Dict[str, Any]│   │
-│  │  + generate_shap_analysis(X_test, y_test, model) -> │   │
-│  │    None                                             │   │
-│  │  + model_predict(X_new: DataFrame) -> Dict[str, Any]│   │
-│  │  + run_complete_pipeline_robust() -> Dict[str, Any] │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                          │                                 │
-│                          ▼                                 │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │          Chap30PreprocessorComprehensive            │   │
-│  │                                                     │   │
-│  │  - backend_root: Path                               │   │
-│  │  - raw_data_path: Path                              │   │
-│  │  - processed_data_path: Path                        │   │
-│  │  - columns_to_drop: List[str]                       │   │
-│  │  - columns_to_anonymize: List[str]                  │   │
-│  │  - declaration_id_cols: List[str]                   │   │
-│  │                                                     │   │
-│  │  + load_data() -> DataFrame                         │   │
-│  │  + clean_data(df: DataFrame) -> DataFrame           │   │
-│  │  + aggregate_data(df: DataFrame) -> DataFrame       │   │
-│  │  + create_comprehensive_fraud_flag(df: DataFrame) ->│   │
-│  │    Series                                            │   │
-│  │  + create_comprehensive_business_features(df:       │   │
-│  │    DataFrame) -> DataFrame                          │   │
-│  │  + handle_missing_values(df: DataFrame) ->          │   │
-│  │    DataFrame                                        │   │
-│  │  + run_preprocessing() -> DataFrame                 │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                          │                                 │
-│                          ▼                                 │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              AdvancedRLManager                       │   │
-│  │                                                     │   │
-│  │  - epsilon: float (0.03-0.04)                      │   │
-│  │  - strategy: str ("hybrid")                         │   │
-│  │  - inspector_profiles: Dict                         │   │
-│  │  - bandit: MultiArmedBandit                         │   │
-│  │  - store: RLDataStore                               │   │
-│  │  - session_metrics: Dict[str, Any]                  │   │
-│  │                                                     │   │
-│  │  + predict(context: Dict, ml_probability: float,    │   │
-│  │    ml_threshold: float) -> Dict[str, Any]           │   │
-│  │  + update_feedback(declaration_id: str, chapter:    │   │
-│  │    str, inspector_id: str, ml_prediction: bool,     │   │
-│  │    ml_probability: float, inspector_decision: str,  │   │
-│  │    inspector_confidence: float, review_time_seconds:│   │
-│  │    float, feedback_category: str, notes: str,       │   │
-│  │    context_features: Dict) -> Dict[str, Any]        │   │
-│  │  + calculate_feedback_quality(agreement: bool,      │   │
-│  │    confidence: float) -> float                      │   │
-│  │  + get_performance_summary() -> Dict[str, Any]      │   │
-│  │  + _count_similar_cases(inspector_id: str,          │   │
-│  │    context_key: str) -> int                         │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                          │                                 │
-│                          ▼                                 │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              InspectIADatabase                      │   │
-│  │                                                     │   │
-│  │  - db: Session                                      │   │
-│  │                                                     │   │
-│  │  + create_declaration(declaration_data: Dict) ->    │   │
-│  │    Declaration                                      │   │
-│  │  + get_declaration(declaration_id: str) ->          │   │
-│  │    Optional[Declaration]                            │   │
-│  │  + create_prediction(prediction_data: Dict) ->      │   │
-│  │    Prediction                                       │   │
-│  │  + create_rl_decision(decision_data: Dict) ->       │   │
-│  │    RLDecision                                       │   │
-│  │  + create_feedback(feedback_data: Dict) ->          │   │
-│  │    FeedbackHistory                                  │   │
-│  │  + get_chapter_stats(chapter_id: str) ->            │   │
-│  │    Dict[str, Any]                                   │   │
-│  │  + get_performance_metrics(chapter_id: str) ->      │   │
-│  │    List[PerformanceMetric]                          │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                          │                                 │
-│                          ▼                                 │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              AppState (Flutter)                     │   │
-│  │                                                     │   │
-│  │  - _lastAnalysisResult: Map<String, dynamic>?       │   │
-│  │  - _recentDeclarations: List<Map<String, dynamic>>  │   │
-│  │  - _pvList: List<Map<String, dynamic>>              │   │
-│  │  - _currentAnalytics: Map<String, dynamic>?         │   │
-│  │  - _selectedChapter: String?                        │   │
-│  │  - _currentPVDetail: Map<String, dynamic>?          │   │
-│  │                                                     │   │
-│  │  + setLastAnalysisResult(result: Map) -> void       │   │
-│  │  + addPV(pv: Map) -> void                           │   │
-│  │  + autoPredict(chapter: String, requestData: Map) ->│   │
-│  │    Future<Map>                                      │   │
-│  │  + processOcrDocument(chapter: String, fileBytes:   │   │
-│  │    List<int>, fileName: String) -> Future<Map>      │   │
-│  │  + rlPredict(chapter: String, context: Map) ->      │   │
-│  │    Future<Map>                                      │   │
-│  │  + addRlFeedback(chapter: String, feedbackData: Map)│   │
-│  │    -> Future<bool>                                  │   │
-│  │  + loadPVList(chapter: String) -> Future<void>      │   │
-│  │  + loadPVDetail(pvId: String, chapter: String) ->   │   │
-│  │    Future<Map>                                      │   │
-│  │  + getRecentDeclarationIds() -> List<String>        │   │
-│  │  + getAggregationStatsForChapter(chapter: String) ->│   │
-│  │    Map<String, dynamic>                             │   │
-│  │  + refreshAllData() -> Future<void>                 │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                          │                                 │
-│                          ▼                                 │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              CompleteBackendService                 │   │
-│  │                                                     │   │
-│  │  - _isLoading: bool                                 │   │
-│  │  - _error: String?                                  │   │
-│  │  - _lastResponse: Map<String, dynamic>?             │   │
-│  │  - _recentResults: List<Map<String, dynamic>>       │   │
-│  │                                                     │   │
-│  │  + healthCheck() -> Future<Map<String, dynamic>?>   │   │
-│  │  + getAvailableChapters() -> Future<List<Map>>      │   │
-│  │  + checkDependencies() -> Future<Map<String,        │   │
-│  │    dynamic>?>                                       │   │
-│  │  + getChapterConfig(chapter: String) -> Future<Map> │   │
-│  │  + getModelInfo(chapter: String) -> Future<Map>     │   │
-│  │  + predictFromOcrData(chapter: String, ocrData: Map)│   │
-│  │    -> Future<Map>                                   │   │
-│  │  + uploadDeclarationFile(chapter: String, fileBytes:│   │
-│  │    List<int>, fileName: String) -> Future<Map>      │   │
-│  │  + generatePV(chapter: String, requestData: Map) -> │   │
-│  │    Future<Map>                                      │   │
-│  │  + getPVList(chapter: String) -> Future<List<Map>>  │   │
-│  │  + getPVDetail(pvId: String, chapter: String) ->    │   │
-│  │    Future<Map>                                      │   │
-│  │  + getRLAnalytics(chapter: String) -> Future<Map>   │   │
-│  │  + getRLPerformance(chapter: String) -> Future<Map> │   │
-│  │  + addRLFeedback(chapter: String, feedbackData: Map)│   │
-│  │    -> Future<bool>                                  │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                          │                                 │
-│                          ▼                                 │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              PVGeneratorComplet                     │   │
-│  │                                                     │   │
-│  │  + generate_pv_report(declaration_data: Dict,       │   │
-│  │    prediction_results: Dict, chapter: str) ->       │   │
-│  │    Dict[str, Any]                                   │   │
-│  │  + create_incoherence_analysis(data: Dict) ->       │   │
-│  │    List[Incoherence]                                │   │
-│  │  + generate_risk_assessment(prediction: Dict) ->    │   │
-│  │    Dict[str, Any]                                   │   │
-│  │  + create_recommendations(analysis: Dict) ->        │   │
-│  │    List[str]                                        │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                          │                                 │
-│                          ▼                                 │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              Database Models (SQLAlchemy)          │   │
-│  │                                                     │   │
-│  │  Chapter: chapter_id, chapter_name, best_model,    │   │
-│  │    model_performance, fraud_rate                   │   │
-│  │  Model: model_id, model_name, model_type,          │   │
-│  │    performance_metrics, hyperparameters            │   │
-│  │  Declaration: declaration_id, chapter_id, file_name│   │
-│  │    poids_net_kg, valeur_caf, code_sh_complet       │   │
-│  │  Prediction: prediction_id, declaration_id,        │   │
-│  │    predicted_fraud, fraud_probability, decision    │   │
-│  │  RLDecision: decision_id, declaration_id, action,  │   │
-│  │    rl_probability, confidence_score                │   │
-│  │  FeedbackHistory: feedback_id, declaration_id,     │   │
-│  │    inspector_id, inspector_decision, reward        │   │
-│  │  AnalysisResult: result_id, declaration_id,        │   │
-│  │    analysis_type, analysis_confidence              │   │
-│  │  ModelThreshold: threshold_id, chapter_id,         │   │
-│  │    conforme_threshold, fraude_threshold            │   │
-│  │  PerformanceMetric: metric_id, chapter_id,         │   │
-│  │    metric_type, metric_value                       │   │
-│  │  SystemLog: log_id, log_level, component, message  │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+```python
+class QLearningAgent:
+    def __init__(self, state_size, action_size, learning_rate=0.1, gamma=0.95):
+        self.state_size = state_size
+        self.action_size = action_size
+        self.learning_rate = learning_rate
+        self.gamma = gamma
+        
+        # Table Q (état discretisé)
+        self.q_table = np.zeros((state_size, action_size))
+        
+        # Paramètres d'exploration
+        self.epsilon = 1.0
+        self.epsilon_decay = 0.995
+        self.epsilon_min = 0.01
+        
+        # Historique pour l'apprentissage
+        self.memory = []
+        self.batch_size = 32
+    
+    def act(self, state):
+        """Sélection d'une action selon la politique ε-greedy"""
+        if np.random.random() <= self.epsilon:
+            return np.random.choice(self.action_size)
+        return np.argmax(self.q_table[state])
+    
+    def learn(self, state, action, reward, next_state, done):
+        """Apprentissage Q-Learning"""
+        # Valeur Q actuelle
+        current_q = self.q_table[state, action]
+        
+        # Valeur Q maximale pour l'état suivant
+        next_max_q = np.max(self.q_table[next_state]) if not done else 0
+        
+        # Nouvelle valeur Q (équation de Bellman)
+        new_q = current_q + self.learning_rate * (
+            reward + self.gamma * next_max_q - current_q
+        )
+        
+        # Mise à jour de la table Q
+        self.q_table[state, action] = new_q
+        
+        # Décroissance de l'exploration
+        if self.epsilon > self.epsilon_min:
+            self.epsilon *= self.epsilon_decay
+    
+    def save_model(self, filepath):
+        """Sauvegarde du modèle"""
+        np.save(filepath, self.q_table)
+    
+    def load_model(self, filepath):
+        """Chargement du modèle"""
+        self.q_table = np.load(filepath)
 ```
 
-#### 3.3.4 Diagrammes d'activité
+### 3.4.4 Intégration SHAP pour l'Explicabilité
 
-**Diagramme d'activité - Pipeline complet de détection de fraude (réel) :**
+**Moteur SHAP :**
 
-```mermaid
-flowchart TD
-    A[📱 Inspecteur - Upload Document<br/>PDF/CSV/Image via Flutter] --> B{🔍 Type de fichier?}
+```python
+class SHAPExplainer:
+    def __init__(self, model, model_type='tree'):
+        self.model = model
+        self.model_type = model_type
+        
+        # Initialisation de l'explainer selon le type de modèle
+        if model_type == 'tree':
+            self.explainer = shap.TreeExplainer(model)
+        elif model_type == 'linear':
+            self.explainer = shap.LinearExplainer(model)
+        else:
+            self.explainer = shap.Explainer(model)
     
-    B -->|PDF| C[📄 ocr_ingest.py<br/>process_pdf_declaration]
-    B -->|CSV| D[📊 ocr_ingest.py<br/>process_csv_declaration]
-    B -->|Image| E[🖼️ ocr_ingest.py<br/>process_image_declaration]
+    def explain_prediction(self, X, feature_names=None):
+        """Explication d'une prédiction individuelle"""
+        # Calcul des valeurs SHAP
+        shap_values = self.explainer.shap_values(X)
+        
+        # Si modèle binaire, prendre les valeurs pour la classe positive
+        if len(shap_values.shape) > 1 and shap_values.shape[1] == 2:
+            shap_values = shap_values[:, 1]
+        
+        # Calcul de l'importance des features
+        feature_importance = np.abs(shap_values).argsort()[::-1]
+        
+        # Construction de l'explication
+        explanation = {
+            'prediction': self.model.predict_proba(X)[0],
+            'shap_values': shap_values[0],
+            'feature_importance': feature_importance,
+            'top_features': self.get_top_features(shap_values[0], feature_names),
+            'base_value': self.explainer.expected_value,
+            'summary': self.generate_summary(shap_values[0], feature_names)
+        }
+        
+        return explanation
     
-    C --> F[🔤 extract_fields_from_text<br/>Patterns regex extraction]
-    D --> G[📈 aggregate_csv_by_declaration<br/>Group by DECLARATION_ID]
-    E --> H[👁️ pytesseract OCR<br/>extract_text_with_ocr]
+    def get_top_features(self, shap_values, feature_names, top_k=10):
+        """Extraction des features les plus importantes"""
+        if feature_names is None:
+            feature_names = [f'feature_{i}' for i in range(len(shap_values))]
+        
+        # Tri par importance (valeur absolue)
+        importance_scores = np.abs(shap_values)
+        top_indices = importance_scores.argsort()[-top_k:][::-1]
+        
+        top_features = []
+        for i in top_indices:
+            feature_info = {
+                'name': feature_names[i],
+                'shap_value': shap_values[i],
+                'importance': importance_scores[i],
+                'impact': self.get_impact_description(shap_values[i]),
+                'direction': 'positive' if shap_values[i] > 0 else 'negative'
+            }
+            top_features.append(feature_info)
+        
+        return top_features
     
-    F --> I[🔧 normalize_ocr_data<br/>FIELD_MAPPING application]
-    G --> I
-    H --> I
+    def generate_summary(self, shap_values, feature_names):
+        """Génération d'un résumé textuel de l'explication"""
+        top_features = self.get_top_features(shap_values, feature_names, top_k=3)
+        
+        summary_parts = []
+        for feature in top_features:
+            if feature['importance'] > 0.1:  # Seuil d'importance
+                impact = "augmente" if feature['direction'] == 'positive' else "diminue"
+                summary_parts.append(
+                    f"{feature['name']} {impact} la probabilité de fraude"
+                )
+        
+        if summary_parts:
+            return f"Décision basée principalement sur : {', '.join(summary_parts)}"
+        else:
+            return "Aucun facteur de risque significatif identifié"
     
-    I --> J[📋 ocr_pipeline.py<br/>create_context_from_ocr_data]
-    J --> K[🎯 load_ml_model<br/>Load chapter-specific model]
-    
-    K --> L{📚 Chapitre?}
-    L -->|chap30| M1[🧬 Chap30SupervisedML<br/>XGBoost_calibrated]
-    L -->|chap84| M2[⚙️ Chap84SupervisedML<br/>CatBoost_calibrated]
-    L -->|chap85| M3[⚡ Chap85SupervisedML<br/>XGBoost_calibrated]
-    
-    M1 --> N1[🔬 model.predict_proba<br/>22 features + business rules]
-    M2 --> N2[🔬 model.predict_proba<br/>21 features + business rules]
-    M3 --> N3[🔬 model.predict_proba<br/>23 features + business rules]
-    
-    N1 --> O[📊 calibrate_probability_for_chapter<br/>Brier Score optimization]
-    N2 --> O
-    N3 --> O
-    
-    O --> P[⚖️ determine_decision<br/>Apply optimal_thresholds.json]
-    
-    P --> Q{🎯 Décision ML?}
-    Q -->|conforme < 0.2| R1[✅ CONFORME]
-    Q -->|fraude > 0.8| R2[❌ FRAUDE]
-    Q -->|zone_grise| R3[⚠️ ZONE GRISE]
-    
-    R1 --> S[🤖 AdvancedRLManager.predict<br/>Multi-Armed Bandit]
-    R2 --> S
-    R3 --> S
-    
-    S --> T[🎰 MultiArmedBandit.choose<br/>epsilon-greedy strategy]
-    T --> U[📈 calculate_feedback_quality<br/>Expertise-based weighting]
-    U --> V[📤 Return Final Decision<br/>ML + RL hybrid result]
-    
-    V --> W[💾 routes_predict.py<br/>save_declaration_to_postgresql]
-    W --> X[📊 routes_predict.py<br/>save_prediction_to_postgresql]
-    X --> Y[🎯 routes_predict.py<br/>save_rl_decision_to_postgresql]
-    
-    Y --> Z[📄 PVGeneratorComplet<br/>generate_pv_report]
-    Z --> AA[📋 create_incoherence_analysis<br/>Business rules validation]
-    AA --> BB[🎯 generate_risk_assessment<br/>SHAP + ML confidence]
-    BB --> CC[💡 create_recommendations<br/>Expert system suggestions]
-    
-    CC --> DD[📱 AppState.setLastAnalysisResult<br/>Flutter state management]
-    DD --> EE[💾 SharedPreferences<br/>Persist recent declarations]
-    EE --> FF[📱 Frontend Screens<br/>Display results to inspector]
-    
-    FF --> GG{👤 Action Inspecteur?}
-    GG -->|Feedback| HH[🔄 FeedbackScreen<br/>addRlFeedback]
-    GG -->|Générer PV| II[📄 PVScreen<br/>generatePV]
-    GG -->|Voir Liste| JJ[📋 PVListScreen<br/>loadPVList]
-    GG -->|Voir Détails| KK[👁️ PVDetailScreen<br/>loadPVDetail]
-    
-    HH --> LL[🤖 AdvancedRLManager.update_feedback<br/>Inspector profile update]
-    LL --> MM[📊 calculate_feedback_quality<br/>Reward calculation]
-    MM --> NN[💾 RLDataStore.save_advanced_feedback<br/>SQLite persistence]
-    NN --> OO[🔄 Bandit update<br/>Model improvement]
-    
-    II --> PP[📄 routes_predict.py<br/>generate_pv endpoint]
-    PP --> QQ[💾 save_pv_to_postgresql<br/>PostgreSQL storage]
-    
-    JJ --> RR[📊 routes_predict.py<br/>list_pvs endpoint]
-    RR --> SS[📋 PostgreSQL query<br/>SELECT * FROM pvs]
-    
-    KK --> TT[📊 routes_predict.py<br/>get_pv_details endpoint]
-    TT --> UU[📋 PostgreSQL query<br/>SELECT pv_details]
-    
-    OO --> VV[🎯 Model Learning<br/>Continuous improvement]
-    QQ --> VV
-    SS --> VV
-    UU --> VV
-    
-    VV --> WW[🔄 Next Analysis<br/>Ready for new document]
-    
-    style A fill:#e1f5fe
-    style B fill:#fff3e0
-    style C fill:#f3e5f5
-    style D fill:#f3e5f5
-    style E fill:#f3e5f5
-    style F fill:#e8f5e8
-    style G fill:#e8f5e8
-    style H fill:#e8f5e8
-    style I fill:#fff9c4
-    style J fill:#fff9c4
-    style K fill:#fff9c4
-    style L fill:#fff3e0
-    style M1 fill:#e3f2fd
-    style M2 fill:#e3f2fd
-    style M3 fill:#e3f2fd
-    style N1 fill:#f1f8e9
-    style N2 fill:#f1f8e9
-    style N3 fill:#f1f8e9
-    style O fill:#fce4ec
-    style P fill:#fce4ec
-    style Q fill:#fff3e0
-    style R1 fill:#e8f5e8
-    style R2 fill:#ffebee
-    style R3 fill:#fff8e1
-    style S fill:#e1f5fe
-    style T fill:#e1f5fe
-    style U fill:#e1f5fe
-    style V fill:#e1f5fe
-    style W fill:#f3e5f5
-    style X fill:#f3e5f5
-    style Y fill:#f3e5f5
-    style Z fill:#fff9c4
-    style AA fill:#fff9c4
-    style BB fill:#fff9c4
-    style CC fill:#fff9c4
-    style DD fill:#e8f5e8
-    style EE fill:#e8f5e8
-    style FF fill:#e8f5e8
-    style GG fill:#fff3e0
-    style HH fill:#e1f5fe
-    style II fill:#f3e5f5
-    style JJ fill:#f3e5f5
-    style KK fill:#f3e5f5
-    style LL fill:#e1f5fe
-    style MM fill:#e1f5fe
-    style NN fill:#e1f5fe
-    style OO fill:#e1f5fe
-    style PP fill:#f3e5f5
-    style QQ fill:#f3e5f5
-    style RR fill:#f3e5f5
-    style SS fill:#f3e5f5
-    style TT fill:#f3e5f5
-    style UU fill:#f3e5f5
-    style VV fill:#e8f5e8
-    style WW fill:#e1f5fe
+    def get_impact_description(self, shap_value):
+        """Description de l'impact d'une feature"""
+        abs_value = abs(shap_value)
+        if abs_value > 0.2:
+            return "Impact très élevé"
+        elif abs_value > 0.1:
+            return "Impact élevé"
+        elif abs_value > 0.05:
+            return "Impact modéré"
+        else:
+            return "Impact faible"
 ```
 
-#### 3.3.5 Diagrammes de composants
+## 3.5 Architecture Technique et Choix Technologiques
 
-**Diagramme de composants - Architecture système :**
+### 3.5.2 Stack Technologique Détaillé
 
+**Backend :**
+- **Framework** : FastAPI (Python 3.9+)
+- **Base de données** : PostgreSQL 14+
+- **Cache** : Redis 7+
+- **Queue** : Celery avec Redis
+- **Monitoring** : Prometheus + Grafana
+- **Logs** : ELK Stack (Elasticsearch, Logstash, Kibana)
+
+**Frontend :**
+- **Framework** : Flutter 3.0+
+- **État** : Provider pattern
+- **Navigation** : Go Router
+- **HTTP** : Dio
+- **Local Storage** : Hive
+- **Charts** : FL Chart
+
+**Infrastructure :**
+- **Conteneurisation** : Docker + Docker Compose
+- **Orchestration** : Kubernetes (production)
+- **CI/CD** : GitHub Actions
+- **Monitoring** : Prometheus + Grafana
+- **Logs** : ELK Stack
+
+### 3.5.3 Architecture de Déploiement
+
+**Environnement de développement :**
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │                Frontend Layer                       │   │
-│  │                                                     │   │
-│  │  ┌─────────────────┐    ┌─────────────────┐        │   │
-│  │  │   Flutter       │    │   Web Interface │        │   │
-│  │  │   Mobile App    │    │   (Dashboard)   │        │   │
-│  │  └─────────────────┘    └─────────────────┘        │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                          │                                 │
-│                          │ HTTP/REST API                   │
-│                          ▼                                 │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │                API Layer                            │   │
-│  │                                                     │   │
-│  │  ┌─────────────────┐    ┌─────────────────┐        │   │
-│  │  │   FastAPI       │    │   CORS          │        │   │
-│  │  │   Server        │    │   Middleware    │        │   │
-│  │  └─────────────────┘    └─────────────────┘        │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                          │                                 │
-│                          │ Internal Calls                  │
-│                          ▼                                 │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │                Business Layer                       │   │
-│  │                                                     │   │
-│  │  ┌─────────────────┐    ┌─────────────────┐        │   │
-│  │  │   OCR Pipeline  │    │   ML Models     │        │   │
-│  │  │   (Processing)  │    │   (Prediction)  │        │   │
-│  │  └─────────────────┘    └─────────────────┘        │   │
-│  │           │                       │                 │   │
-│  │           ▼                       ▼                 │   │
-│  │  ┌─────────────────┐    ┌─────────────────┐        │   │
-│  │  │   RL Manager    │    │   Business      │        │   │
-│  │  │   (Learning)    │    │   Rules Engine  │        │   │
-│  │  └─────────────────┘    └─────────────────┘        │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                          │                                 │
-│                          │ Database Connections            │
-│                          ▼                                 │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │                Data Layer                           │   │
-│  │                                                     │   │
-│  │  ┌─────────────────┐    ┌─────────────────┐        │   │
-│  │  │   PostgreSQL    │    │   SQLite        │        │   │
-│  │  │   (Main Data)   │    │   (RL Data)     │        │   │
-│  │  └─────────────────┘    └─────────────────┘        │   │
-│  │           │                       │                 │   │
-│  │           ▼                       ▼                 │   │
-│  │  ┌─────────────────┐    ┌─────────────────┐        │   │
-│  │  │   declarations  │    │   advanced_     │        │   │
-│  │  │   predictions   │    │   decisions     │        │   │
-│  │  │   pv_inspection │    │   advanced_     │        │   │
-│  │  └─────────────────┘    └─────────────────┘        │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Flutter Dev   │    │   FastAPI Dev   │    │   PostgreSQL    │
+│   (Hot Reload)  │◄──►│   (Debug Mode)  │◄──►│   (Local)       │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
+
+**Environnement de production :**
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Load Balancer │    │   App Servers   │    │   DB Cluster    │
+│   (Nginx)       │◄──►│   (FastAPI)     │◄──►│   (PostgreSQL)  │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   CDN           │    │   Monitoring    │    │   Backup        │
+│   (Static)      │    │   (Prometheus)  │    │   (Automated)   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### 3.5.4 Sécurité et Performance
+
+**Sécurité :**
+- **Authentification** : JWT avec refresh tokens
+- **Autorisation** : RBAC avec permissions granulaires
+- **Chiffrement** : TLS 1.3, AES-256 pour les données sensibles
+- **Validation** : Validation stricte des entrées utilisateur
+- **Audit** : Logs d'audit complets
+
+**Performance :**
+- **Cache** : Redis pour les données fréquemment accédées
+- **Index** : Index optimisés sur PostgreSQL
+- **Pagination** : Pagination pour les grandes listes
+- **Compression** : Gzip pour les réponses API
+- **CDN** : Distribution de contenu statique
+
+**Scalabilité :**
+- **Horizontal** : Scaling horizontal des serveurs d'application
+- **Vertical** : Scaling vertical de la base de données
+- **Load Balancing** : Distribution de charge intelligente
+- **Auto-scaling** : Scaling automatique basé sur la charge
 
 ---
 
-> **Note :** Tous les diagrammes UML ci-dessus respectent strictement les conventions UML 2.5 et les règles de l'art en ingénierie logicielle, avec :
-> - **Diagrammes de cas d'utilisation** : Relations `<<include>>` correctement notées
-> - **Diagrammes de séquence** : Messages et lifelines conformes aux standards
-> - **Diagrammes de classe** : Visibilité des attributs (- privé, + public) et types de retour
-> - **Diagrammes d'activité** : Nœuds de début/fin et flux de contrôle standardisés
-> - **Diagrammes de composants** : Interfaces et dépendances clairement définies
-
-#### 3.3.6 Dessins des IHM métier
-
-**Interface Inspecteur Mobile (Flutter) - HomeScreen réel :**
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    InspectIA                    🚪 Logout   │
-│              [Logo] Douanes Sénégalaises                    │
-├─────────────────────────────────────────────────────────────┤
-│  Inspecteur Douane                                          │
-│  Système d'analyse intelligente des déclarations douanières │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  🎯 Actions disponibles                                    │
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐           │
-│  │📤 Analyser│ │📋 Générer│ │🔄 Feedback│ │📈 Performance│ │
-│  │         │ │   PV    │ │         │ │         │           │
-│  └─────────┘ └─────────┘ └─────────┘ └─────────┘           │
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐           │
-│  │📊 Analytics│ │📋 Liste PV│ │🧪 Test Backend│ │👁️ Détails PV│ │
-│  │         │ │         │ │         │ │         │           │
-│  └─────────┘ └─────────┘ └─────────┘ └─────────┘           │
-│                                                             │
-│  📊 Informations rapides                                   │
-│  • Chapitre actuel: chap30                                 │
-│  • Déclarations récentes: 5                                │
-│  • PV générés: 3                                           │
-│  • Agrégation automatique par DECLARATION_ID               │
-│  • Support complet: CSV (agrégation), PDF/Images (OCR)    │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**Interface Upload (Flutter) - UploadScreen réel :**
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  ← Retour        📤 Upload Document         🔄 Actualiser   │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  📁 Sélectionner le fichier                                │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │  🗂️  [Choisir un fichier...]                          │ │
-│  │  Formats supportés: PDF, CSV, PNG, JPG                 │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                             │
-│  📊 Chapitre d'analyse                                     │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │  Chapitre 30 - Produits pharmaceutiques         ▼      │ │
-│  │  • XGBoost (F1: 0.971, AUC: 0.996)                    │ │
-│  │  • Calibration: EXCELLENT (Brier: 0.0058)             │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                             │
-│  🎯 Niveau d'analyse RL                                    │
-│  ○ Basic (ε=0.16, ε-greedy)                               │
-│  ● Advanced (ε=0.08, UCB)                                 │
-│  ○ Expert (ε=0.03, Hybrid)                                │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │  🚀 Lancer l'analyse                                    │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                             │
-│  📈 Résultats récents                                      │
-│  • 2023/01A/12345 → Fraude (0.89)                         │
-│  • 2023/01B/12346 → Conforme (0.12)                       │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**Interface Feedback (Flutter) - FeedbackScreen réel :**
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  ← Retour        🔄 Feedback RL          💾 Sauvegarder    │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  📋 Chapitre                                                │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │  Chapitre 30 - Produits pharmaceutiques         ▼      │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                             │
-│  📄 ID Déclaration                                         │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │  2023/01A/12345                                ▼       │ │
-│  │  [Liste des IDs récents de prédictions]                │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                             │
-│  🎯 Décision de l'inspecteur                               │
-│  ○ Conforme (Pas de fraude)                               │
-│  ● Fraude détectée                                         │
-│                                                             │
-│  📊 Niveau de confiance                                    │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │  ████████████████████░░░░  80%                         │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                             │
-│  📝 Notes (optionnel)                                      │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │  Sous-évaluation détectée sur le conditionnement...    │ │
-│  │                                                         │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │  ✅ Envoyer le feedback                                 │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                             │
-│  📈 Performance RL                                         │
-│  • Accord modèle-inspecteur: 87%                           │
-│  • Qualité feedback: 0.92                                  │
-│  • Total feedbacks: 23                                     │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**Interface Agent de Ciblage Web - API Endpoints réels :**
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  🏛️ DGD - Direction Générale des Douanes                  │
-│  InspectIA API v2.0.0 - PostgreSQL                        │
-├─────────────────────────────────────────────────────────────┤
-│  📊 /health/  📤 /api/v2/declarations/upload/  📋 /pv/    │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  📊 Statut Système                                         │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │  ✅ PostgreSQL: Opérationnel                           │ │
-│  │  ✅ ML Models: Chargés (3 chapitres)                   │ │
-│  │  ✅ RL System: Actif (3 niveaux)                       │ │
-│  │  ✅ OCR Pipeline: Fonctionnel                          │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                             │
-│  📈 Performance des Modèles                                │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │ Chapitre 30: XGBoost (F1=0.971, AUC=0.996) ✅         │ │
-│  │ Chapitre 84: CatBoost (F1=0.997, AUC=0.999) ✅        │ │
-│  │ Chapitre 85: XGBoost (F1=0.965, AUC=0.994) ✅         │ │
-│  └─────────────────────────────────────────────────────────┘ │
-│                                                             │
-│  🔄 Endpoints Principaux                                   │
-│  • POST /api/v2/declarations/upload/ (CSV/PDF/Image)      │
-│  • GET /predict/{chapter}/pv (Liste PV)                   │
-│  • GET /predict/{chapter}/pv/{pv_id} (Détails PV)         │
-│  • POST /predict/{chapter}/rl/feedback (Feedback RL)      │
-│                                                             │
-│  📊 Base de Données                                        │
-│  • declarations (PostgreSQL)                              │
-│  • predictions (PostgreSQL)                               │
-│  • pv_inspection (PostgreSQL)                             │
-│  • advanced_decisions (SQLite)                            │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-*[Suite du mémoire dans les parties suivantes...]*
+**Fin du Chapitre 3**
