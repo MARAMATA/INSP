@@ -1,0 +1,14 @@
+{
+  "conforme": 0.05,
+  "fraude": 0.35,
+  "optimal_threshold": 0.25,
+  "ml_threshold": 0.25,
+  "decision_threshold": 0.25,
+  "rl_threshold": 0.25,
+  "confidence_high": 0.9,
+  "confidence_medium": 0.7,
+  "auc": 0.9997,
+  "f1": 0.9887,
+  "precision": 0.9942,
+  "recall": 0.9833
+}

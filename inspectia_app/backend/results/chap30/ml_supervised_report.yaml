@@ -1,0 +1,76 @@
+best_model: CatBoost
+chapter: '30'
+data_source: /Users/macbook/Desktop/INSP/inspectia_app/backend/data/processed/CHAP30_PROCESSED_ADVANCED.csv
+models_performance:
+  CatBoost:
+    accuracy: !!python/object/apply:numpy._core.multiarray.scalar
+    - &id001 !!python/object/apply:numpy.dtype
+      args:
+      - f8
+      - false
+      - true
+      state: !!python/tuple
+      - 3
+      - <
+      - null
+      - null
+      - null
+      - -1
+      - -1
+      - 0
+    - !!binary |
+      cHwD0aXK7z8=
+    auc: 0.999693217965713
+    avg_precision: 0.998806071856396
+    f1: 0.9831029185867896
+    precision: 0.9917355371900827
+    recall: 0.9746192893401016
+  LightGBM:
+    accuracy: !!python/object/apply:numpy._core.multiarray.scalar
+    - *id001
+    - !!binary |
+      70HVKczF7z8=
+    auc: 0.9996177349114722
+    avg_precision: 0.9985999919530646
+    f1: 0.9817813765182186
+    precision: 0.9788092835519677
+    recall: 0.9847715736040609
+  LogisticRegression:
+    accuracy: !!python/object/apply:numpy._core.multiarray.scalar
+    - *id001
+    - !!binary |
+      S25LIae87j8=
+    auc: 0.9932612410060759
+    avg_precision: 0.9784308011054504
+    f1: 0.9033816425120773
+    precision: 0.8617511520737328
+    recall: 0.949238578680203
+  RandomForest:
+    accuracy: !!python/object/apply:numpy._core.multiarray.scalar
+    - *id001
+    - !!binary |
+      SBb1h9dC7z8=
+    auc: 0.9979043814990661
+    avg_precision: 0.9922547394700325
+    f1: 0.9374665954035275
+    precision: 0.989841986455982
+    recall: 0.8903553299492386
+  XGBoost:
+    accuracy: !!python/object/apply:numpy._core.multiarray.scalar
+    - *id001
+    - !!binary |
+      cHwD0aXK7z8=
+    auc: 0.9996667305018689
+    avg_precision: 0.9987211018443773
+    f1: 0.9831374552887072
+    precision: 0.9897119341563786
+    recall: 0.9766497461928934
+summary:
+  best_accuracy: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id001
+  - !!binary |
+    cHwD0aXK7z8=
+  best_auc: 0.999693217965713
+  best_f1: 0.9831374552887072
+  total_models: 5
+timestamp: '2025-10-12T11:27:39.046656'
