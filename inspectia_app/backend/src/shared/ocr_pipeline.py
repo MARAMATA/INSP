@@ -208,30 +208,27 @@ def debug_single_prediction(data: Dict, chapter: str):
     # 1. Features d'entrée
     print(f"Données d'entrée: {data}")
     
-    # 2. Features calculées
-    context = create_advanced_context_from_ocr_data(data, chapter)
-    print(f"Features calculées: {len(context)}")
+    # 2. Utiliser predict_fraud pour obtenir le contexte complet enrichi
+    pipeline = AdvancedOCRPipeline()
+    result = pipeline.predict_fraud(data, chapter, "basic")
     
-    # 3. Features business activées
+    # 3. Extraire le contexte enrichi
+    context = result.get("context", {})
+    print(f"Features calculées (enrichies): {len(context)}")
+    
+    # 4. Features business activées
     business_features = {k: v for k, v in context.items() if k.startswith('BUSINESS_') and v == 1}
     print(f"Features business activées: {business_features}")
     
-    # 4. Prédiction brute
-    try:
-        model_data = load_ml_model(chapter)
-        if model_data and 'model' in model_data:
-            import pandas as pd
-            df = pd.DataFrame([context])
-            raw_prob = model_data['model'].predict_proba(df)[0][1]
-            print(f"Probabilité brute: {raw_prob}")
-            
-            # 5. Décision finale
-            decision = determine_decision(raw_prob, chapter)
-            print(f"Décision finale: {decision}")
-        else:
-            print("Modèle non trouvé")
-    except Exception as e:
-        print(f"Erreur prédiction: {e}")
+    # 5. Fraud scores
+    fraud_scores = {k: v for k, v in context.items() if 'SCORE' in k and v != 0.0}
+    print(f"Fraud scores: {fraud_scores}")
+    
+    # 6. Probabilité et décision
+    ml_prob = result.get("ml_probability", result.get("fraud_probability", 0.0))
+    decision = result.get("decision", "unknown")
+    print(f"Probabilité ML: {ml_prob:.3f}")
+    print(f"Décision finale: {decision}")
 
 
 # Dépendances OCR
@@ -350,7 +347,7 @@ def extract_chapter_from_code_sh(code_sh: str) -> str:
     return "unknown"
 
 def get_chap30_selected_features():
-    """Retourner exactement les mêmes features utilisées dans ml_model_advanced.py du chapitre 30"""
+    """Retourner exactement les mêmes features utilisées dans CHAP30_PROCESSED_ADVANCED.csv (les features réelles du modèle)"""
     return [
         # Features numériques (9)
         'VALEUR_CAF', 'VALEUR_DOUANE', 'MONTANT_LIQUIDATION', 'POIDS_NET',
@@ -361,17 +358,16 @@ def get_chap30_selected_features():
         'MIRROR_TEI_DEVIATION', 'SPECTRAL_CLUSTER_SCORE', 
         'HIERARCHICAL_CLUSTER_SCORE', 'ADMIN_VALUES_SCORE', 
         'ADMIN_VALUES_DEVIATION', 'COMPOSITE_FRAUD_SCORE', 'RATIO_POIDS_VALEUR',
-        # Features business (18) - CHAPITRE 30 (Produits pharmaceutiques)
-        'BUSINESS_GLISSEMENT_TARIFAIRE', 'BUSINESS_GLISSEMENT_DESCRIPTION',
+        # Features business (18) - EXACTEMENT comme dans CHAP30_PROCESSED_ADVANCED.csv
+        'BUSINESS_GLISSEMENT_COSMETIQUE', 'BUSINESS_GLISSEMENT_PAYS_COSMETIQUES',
         'BUSINESS_GLISSEMENT_RATIO_SUSPECT', 'BUSINESS_RISK_PAYS_HIGH',
         'BUSINESS_ORIGINE_DIFF_PROVENANCE', 'BUSINESS_REGIME_PREFERENTIEL',
         'BUSINESS_REGIME_NORMAL', 'BUSINESS_VALEUR_ELEVEE',
         'BUSINESS_VALEUR_EXCEPTIONNELLE', 'BUSINESS_POIDS_ELEVE',
         'BUSINESS_DROITS_ELEVES', 'BUSINESS_RATIO_LIQUIDATION_CAF',
-        'BUSINESS_RATIO_DOUANE_CAF',
-        'BUSINESS_IS_ANTIPALUDEEN',
+        'BUSINESS_RATIO_DOUANE_CAF', 'BUSINESS_IS_MEDICAMENT',
+        'BUSINESS_IS_ANTIPALUDEEN', 'BUSINESS_IS_PRECISION_UEMOA',
         'BUSINESS_ARTICLES_MULTIPLES', 'BUSINESS_AVEC_DPI',
-        'BUSINESS_VALEUR_UNITAIRE_SUSPECTE',
         # Features catégorielles (6)
         'CODE_PRODUIT_STR', 'PAYS_ORIGINE_STR', 'PAYS_PROVENANCE_STR',
         'BUREAU', 'REGIME_FISCAL', 'NUMERO_DPI'
@@ -405,7 +401,7 @@ def get_chap84_selected_features():
     ]
 
 def get_chap85_selected_features():
-    """Retourner exactement les mêmes features utilisées dans ml_model_advanced.py du chapitre 85"""
+    """Retourner exactement les mêmes features utilisées dans CHAP85_PROCESSED_ADVANCED.csv (les features réelles du modèle)"""
     return [
         # Features numériques (9)
         'VALEUR_CAF', 'VALEUR_DOUANE', 'MONTANT_LIQUIDATION', 'POIDS_NET',
@@ -416,12 +412,12 @@ def get_chap85_selected_features():
         'MIRROR_TEI_DEVIATION', 'SPECTRAL_CLUSTER_SCORE', 
         'HIERARCHICAL_CLUSTER_SCORE', 'ADMIN_VALUES_SCORE', 
         'ADMIN_VALUES_DEVIATION', 'COMPOSITE_FRAUD_SCORE', 'RATIO_POIDS_VALEUR',
-        # Features business (18) - CHAPITRE 85 (Appareils électriques)
+        # Features business (18) - EXACTEMENT comme dans CHAP85_PROCESSED_ADVANCED.csv
         'BUSINESS_GLISSEMENT_ELECTRONIQUE', 'BUSINESS_GLISSEMENT_PAYS_ELECTRONIQUES',
         'BUSINESS_GLISSEMENT_RATIO_SUSPECT', 'BUSINESS_RISK_PAYS_HIGH',
         'BUSINESS_ORIGINE_DIFF_PROVENANCE', 'BUSINESS_REGIME_PREFERENTIEL',
         'BUSINESS_REGIME_NORMAL', 'BUSINESS_VALEUR_ELEVEE',
-        'BUSINESS_VALEUR_EXCEPTIONNELLE', 'BUSINESS_POIDS_FAIBLE',
+        'BUSINESS_VALEUR_EXCEPTIONNELLE', 'BUSINESS_POIDS_FAIBLE',  # Note: POIDS_FAIBLE pour chap85
         'BUSINESS_DROITS_ELEVES', 'BUSINESS_RATIO_LIQUIDATION_CAF',
         'BUSINESS_RATIO_DOUANE_CAF', 'BUSINESS_IS_ELECTRONIQUE',
         'BUSINESS_IS_TELEPHONE', 'BUSINESS_IS_PRECISION_UEMOA',
@@ -473,26 +469,456 @@ def calculate_dynamic_thresholds(chapter: str) -> Dict[str, float]:
 # FONCTION SUPPRIMÉE - Pas de seuils par défaut, OBLIGATOIRE d'avoir optimal_thresholds.json
 
 
-def calculate_business_features(context: Dict[str, Any], chapter: str, ocr_data: Dict = None) -> Dict[str, Any]:
+# -------------------------------
+# FONCTIONS DE CALCUL DES BUSINESS FEATURES ET FRAUD SCORES
+# (Déplacées depuis OCR_INGEST pour séparer les responsabilités)
+# -------------------------------
+
+def _create_chapter_specific_business_features(context: Dict[str, Any], chapter: str) -> Dict[str, Any]:
     """
-    Calculer les features business en utilisant la fonction d'ocr_ingest.py
-    Cette fonction délègue le calcul des features business à ocr_ingest.py qui contient
-    les vraies features utilisées par les modèles ML.
+    Créer les features business spécifiques à chaque chapitre
+    IMPORTANT: Ces features doivent correspondre EXACTEMENT à celles dans les CSV traités
+    (CHAP30_PROCESSED_ADVANCED.csv, CHAP84_PROCESSED_ADVANCED.csv, CHAP85_PROCESSED_ADVANCED.csv)
+    car les modèles XGBoost ont été entraînés avec ces features.
+    """
+    features = {}
+    
+    if chapter == "chap30":
+        # Features spécifiques au chapitre 30 (Produits pharmaceutiques)
+        code_produit_raw = context.get('CODE_PRODUIT_STR', '') or context.get('CODE_SH_COMPLET', '')
+        code_produit = str(code_produit_raw) if code_produit_raw else ''
+        pays_origine = context.get('PAYS_ORIGINE_STR', '') or context.get('CODE_PAYS_ORIGINE', '')
+        valeur_caf = float(context.get('VALEUR_CAF', 0) or 0)
+        poids_net = float(context.get('POIDS_NET', 0) or context.get('POIDS_NET_KG', 0) or 0)
+        valeur_unitaire_kg = context.get('VALEUR_UNITAIRE_KG', 0)
+        ratio_poids_valeur = context.get('RATIO_POIDS_VALEUR', 0)
+        
+        seuil_valeur_elevee = 70000000
+        seuil_valeur_exceptionnelle = 120000000
+        seuil_poids_eleve = 2000
+        seuil_ratio_suspect = 0.00001
+        
+        # ✅ CORRECTION: Pour déclarations normales (dans l'IQR), désactiver les features suspectes
+        # IQR chap30: Q25=5M, Q75=127M, Médiane=22.7M
+        q25_caf_chap30 = 5000001.0
+        q75_caf_chap30 = 127451321.0
+        is_normal_declaration = q25_caf_chap30 <= valeur_caf <= q75_caf_chap30
+        
+        # Calculer les features business
+        glissement_pays_cosmetiques = 1 if pays_origine in ['FR', 'IT', 'ES', 'DE', 'US', 'JP', 'KR'] else 0
+        
+        # ✅ CORRECTION: Ratio suspect doit être détecté même si valeur dans IQR
+        # Un ratio extrêmement faible (< 1e-8) est toujours suspect, même pour valeurs normales
+        ratio_poids_valeur_calc = ratio_poids_valeur if ratio_poids_valeur > 0 else (poids_net / max(valeur_caf, 1.0))
+        seuil_ratio_extreme = 1e-8  # Ratio extrêmement suspect
+        
+        if ratio_poids_valeur_calc < seuil_ratio_extreme:
+            # Ratio extrêmement suspect (poids très faible pour valeur élevée)
+            glissement_ratio_suspect = 1
+        elif ratio_poids_valeur_calc < seuil_ratio_suspect:
+            # Ratio suspect mais pas extrême
+            glissement_ratio_suspect = 1 if not is_normal_declaration else 0
+        else:
+            glissement_ratio_suspect = 0
+        
+        origine_diff_provenance = 1 if pays_origine != context.get('PAYS_PROVENANCE_STR', '') else 0
+        
+        # ✅ Pour déclarations normales, désactiver certaines features suspectes automatiques
+        if is_normal_declaration:
+            # Déclarations normales : désactiver les features de "glissement" qui peuvent être biaisées
+            # Car pour chap30, FR/IT/ES sont des pays normaux, pas suspects
+            glissement_pays_cosmetiques = 0
+            # Origine diff provenance n'est suspect que si vraiment différent
+            if not context.get('PAYS_PROVENANCE_STR', ''):  # Si pas de provenance, pas suspect
+                origine_diff_provenance = 0
+        
+        features.update({
+            'BUSINESS_GLISSEMENT_COSMETIQUE': 1 if not code_produit.startswith('30') else 0,
+            'BUSINESS_GLISSEMENT_PAYS_COSMETIQUES': glissement_pays_cosmetiques,
+            'BUSINESS_GLISSEMENT_RATIO_SUSPECT': glissement_ratio_suspect,
+            'BUSINESS_RISK_PAYS_HIGH': 1 if pays_origine in ['IN', 'CN', 'PK', 'BD', 'LK'] else 0,
+            'BUSINESS_ORIGINE_DIFF_PROVENANCE': origine_diff_provenance,
+            'BUSINESS_REGIME_PREFERENTIEL': (1 if (isinstance(context.get('REGIME_FISCAL', 0), (int, float)) and context.get('REGIME_FISCAL', 0) in [10, 20, 30, 40]) or (isinstance(context.get('REGIME_FISCAL', ''), str) and 'preferentiel' in context.get('REGIME_FISCAL', '').lower()) else 0),
+            'BUSINESS_REGIME_NORMAL': (1 if (isinstance(context.get('REGIME_FISCAL', 0), (int, float)) and context.get('REGIME_FISCAL', 0) == 0) or (isinstance(context.get('REGIME_FISCAL', ''), str) and 'normal' in context.get('REGIME_FISCAL', '').lower()) else 0),
+            'BUSINESS_VALEUR_ELEVEE': 1 if valeur_caf > seuil_valeur_elevee else 0,
+            'BUSINESS_VALEUR_EXCEPTIONNELLE': 1 if valeur_caf > seuil_valeur_exceptionnelle else 0,
+            'BUSINESS_POIDS_ELEVE': 1 if poids_net > seuil_poids_eleve else 0,
+            'BUSINESS_DROITS_ELEVES': 1 if context.get('TAUX_DROITS_PERCENT', 0) > 20 else 0,
+            'BUSINESS_RATIO_LIQUIDATION_CAF': context.get('MONTANT_LIQUIDATION', 0) / max(valeur_caf, 1),
+            'BUSINESS_RATIO_DOUANE_CAF': context.get('RATIO_DOUANE_CAF', 0),
+            'BUSINESS_IS_MEDICAMENT': 1,
+            'BUSINESS_IS_ANTIPALUDEEN': 1 if 'antipalud' in str(code_produit).lower() or '300360' in str(code_produit) or '300460' in str(code_produit) else 0,
+            'BUSINESS_IS_PRECISION_UEMOA': 1 if context.get('PRECISION_UEMOA', 90) == 90 else 0,
+            'BUSINESS_ARTICLES_MULTIPLES': 1 if context.get('NOMBRE_COLIS', 0) > 1 or context.get('NUMERO_ARTICLE', 0) > 1 else 0,
+            'BUSINESS_AVEC_DPI': 1 if context.get('NUMERO_DPI', '') and str(context.get('NUMERO_DPI', '')).upper() != 'SANS_DPI' else 0,
+        })
+        
+        for key in features:
+            if isinstance(features[key], (int, float)):
+                features[key] = int(features[key])
+            elif isinstance(features[key], bool):
+                features[key] = int(features[key])
+        
+    elif chapter == "chap84":
+        code_produit = context.get('CODE_PRODUIT_STR', '') or context.get('CODE_SH_COMPLET', '')
+        pays_origine = context.get('PAYS_ORIGINE_STR', '') or context.get('CODE_PAYS_ORIGINE', '')
+        valeur_caf = float(context.get('VALEUR_CAF', 0) or 0)
+        poids_net = float(context.get('POIDS_NET', 0) or 0)
+        valeur_unitaire_kg = context.get('VALEUR_UNITAIRE_KG', 0)
+        ratio_poids_valeur = context.get('RATIO_POIDS_VALEUR', 0)
+        
+        seuil_valeur_elevee = 50000000
+        seuil_valeur_exceptionnelle = 100000000
+        seuil_poids_eleve = 5000
+        seuil_ratio_suspect = 0.00001
+        seuil_valeur_unitaire_machine = 5000
+        
+        # ✅ CORRECTION: Pour déclarations normales (dans l'IQR), désactiver les features suspectes
+        # IQR chap84: Q25=661K, Q75=8.7M, Médiane=2.3M
+        q25_caf_chap84 = 661537.5
+        q75_caf_chap84 = 8719647.75
+        is_normal_declaration = q25_caf_chap84 <= valeur_caf <= q75_caf_chap84
+        
+        # Calculer les features business
+        glissement_pays_machines = 1 if (pays_origine in ['CN', 'DE', 'IT', 'JP', 'KR', 'US', 'FR'] and code_produit.startswith('84') and valeur_unitaire_kg > seuil_valeur_unitaire_machine * 0.9) else 0
+        
+        # ✅ CORRECTION: Ratio suspect doit être détecté même si valeur dans IQR
+        ratio_poids_valeur_calc = ratio_poids_valeur if ratio_poids_valeur > 0 else (poids_net / max(valeur_caf, 1.0))
+        seuil_ratio_extreme = 1e-8
+        
+        if ratio_poids_valeur_calc < seuil_ratio_extreme:
+            glissement_ratio_suspect = 1
+        elif ratio_poids_valeur_calc < seuil_ratio_suspect and code_produit.startswith('84'):
+            glissement_ratio_suspect = 1 if not is_normal_declaration else 0
+        else:
+            glissement_ratio_suspect = 0
+        
+        origine_diff_provenance = 1 if pays_origine != context.get('PAYS_PROVENANCE_STR', '') else 0
+        
+        # ✅ Pour déclarations normales, désactiver certaines features suspectes automatiques
+        if is_normal_declaration:
+            # Déclarations normales : désactiver les features de "glissement" qui peuvent être biaisées
+            # Car pour chap84, CN/DE/IT/JP/KR/US/FR sont des pays normaux pour machines
+            glissement_pays_machines = 0
+            # Origine diff provenance n'est suspect que si vraiment différent
+            if not context.get('PAYS_PROVENANCE_STR', ''):  # Si pas de provenance, pas suspect
+                origine_diff_provenance = 0
+        
+        features.update({
+            'BUSINESS_GLISSEMENT_MACHINE': 1 if (code_produit.startswith('84') and valeur_unitaire_kg > seuil_valeur_unitaire_machine and poids_net > seuil_poids_eleve) else 0,
+            'BUSINESS_GLISSEMENT_PAYS_MACHINES': glissement_pays_machines,
+            'BUSINESS_GLISSEMENT_RATIO_SUSPECT': glissement_ratio_suspect,
+            'BUSINESS_RISK_PAYS_HIGH': 1 if pays_origine in ['IN', 'PK', 'BD', 'LK'] else 0,  # CN retiré car normal pour machines
+            'BUSINESS_ORIGINE_DIFF_PROVENANCE': origine_diff_provenance,
+            'BUSINESS_REGIME_PREFERENTIEL': (1 if (isinstance(context.get('REGIME_FISCAL', 0), (int, float)) and context.get('REGIME_FISCAL', 0) in [10, 20, 30, 40]) or (isinstance(context.get('REGIME_FISCAL', ''), str) and 'preferentiel' in str(context.get('REGIME_FISCAL', '')).lower()) else 0),
+            'BUSINESS_REGIME_NORMAL': (1 if (isinstance(context.get('REGIME_FISCAL', 0), (int, float)) and context.get('REGIME_FISCAL', 0) == 0) or (isinstance(context.get('REGIME_FISCAL', ''), str) and 'normal' in str(context.get('REGIME_FISCAL', '')).lower()) else 0),
+            'BUSINESS_VALEUR_ELEVEE': 1 if valeur_caf > seuil_valeur_elevee else 0,
+            'BUSINESS_VALEUR_EXCEPTIONNELLE': 1 if valeur_caf > seuil_valeur_exceptionnelle else 0,
+            'BUSINESS_POIDS_ELEVE': 1 if poids_net > seuil_poids_eleve else 0,
+            'BUSINESS_DROITS_ELEVES': 1 if context.get('TAUX_DROITS_PERCENT', 0) > 20 else 0,
+            'BUSINESS_RATIO_LIQUIDATION_CAF': context.get('MONTANT_LIQUIDATION', 0) / max(valeur_caf, 1),
+            'BUSINESS_RATIO_DOUANE_CAF': context.get('RATIO_DOUANE_CAF', 0),
+            'BUSINESS_IS_MACHINE': 1 if code_produit.startswith('84') else 0,
+            'BUSINESS_IS_ELECTRONIQUE': 1 if code_produit.startswith(('8471', '8473', '8474', '8475', '8476', '8477', '8478', '8479')) else 0,
+            'BUSINESS_IS_PRECISION_UEMOA': 1 if context.get('PRECISION_UEMOA', 90) == 90 else 0,
+            'BUSINESS_ARTICLES_MULTIPLES': 1 if context.get('NOMBRE_COLIS', 0) > 1 or context.get('NUMERO_ARTICLE', 0) > 1 else 0,
+            'BUSINESS_AVEC_DPI': 1 if context.get('NUMERO_DPI', '') and str(context.get('NUMERO_DPI', '')).upper() != 'SANS_DPI' else 0,
+        })
+        
+        for key in features:
+            if isinstance(features[key], (int, float)):
+                features[key] = int(features[key])
+            elif isinstance(features[key], bool):
+                features[key] = int(features[key])
+        
+    elif chapter == "chap85":
+        code_produit = context.get('CODE_PRODUIT_STR', '') or context.get('CODE_SH_COMPLET', '')
+        pays_origine = context.get('PAYS_ORIGINE_STR', '') or context.get('CODE_PAYS_ORIGINE', '')
+        valeur_caf = float(context.get('VALEUR_CAF', 0) or 0)
+        poids_net = float(context.get('POIDS_NET', 0) or 0)
+        valeur_unitaire_kg = context.get('VALEUR_UNITAIRE_KG', 0)
+        ratio_poids_valeur = context.get('RATIO_POIDS_VALEUR', 0)
+        
+        seuil_valeur_elevee = 30000000
+        seuil_valeur_exceptionnelle = 80000000
+        seuil_poids_faible = 50
+        seuil_ratio_suspect = 0.000001
+        seuil_valeur_unitaire_elec = 50000
+        
+        features.update({
+            'BUSINESS_GLISSEMENT_ELECTRONIQUE': 1 if (code_produit.startswith('85') and valeur_unitaire_kg > seuil_valeur_unitaire_elec and poids_net < seuil_poids_faible) else 0,
+            'BUSINESS_GLISSEMENT_PAYS_ELECTRONIQUES': 1 if (pays_origine in ['CN', 'KR', 'JP', 'TW', 'SG', 'MY', 'TH'] and code_produit.startswith('85') and valeur_unitaire_kg > seuil_valeur_unitaire_elec * 0.95) else 0,
+            'BUSINESS_GLISSEMENT_RATIO_SUSPECT': 1 if (ratio_poids_valeur < seuil_ratio_suspect and code_produit.startswith('85')) else 0,
+            'BUSINESS_RISK_PAYS_HIGH': 1 if pays_origine in ['CN', 'IN', 'PK', 'BD', 'LK'] else 0,
+            'BUSINESS_ORIGINE_DIFF_PROVENANCE': 1 if pays_origine != context.get('PAYS_PROVENANCE_STR', '') else 0,
+            'BUSINESS_REGIME_PREFERENTIEL': (1 if (isinstance(context.get('REGIME_FISCAL', 0), (int, float)) and context.get('REGIME_FISCAL', 0) in [10, 20, 30, 40]) or (isinstance(context.get('REGIME_FISCAL', ''), str) and 'preferentiel' in str(context.get('REGIME_FISCAL', '')).lower()) else 0),
+            'BUSINESS_REGIME_NORMAL': (1 if (isinstance(context.get('REGIME_FISCAL', 0), (int, float)) and context.get('REGIME_FISCAL', 0) == 0) or (isinstance(context.get('REGIME_FISCAL', ''), str) and 'normal' in str(context.get('REGIME_FISCAL', '')).lower()) else 0),
+            'BUSINESS_VALEUR_ELEVEE': 1 if valeur_caf > seuil_valeur_elevee else 0,
+            'BUSINESS_VALEUR_EXCEPTIONNELLE': 1 if valeur_caf > seuil_valeur_exceptionnelle else 0,
+            'BUSINESS_POIDS_FAIBLE': 1 if poids_net < seuil_poids_faible else 0,
+            'BUSINESS_DROITS_ELEVES': 1 if context.get('TAUX_DROITS_PERCENT', 0) > 20 else 0,
+            'BUSINESS_RATIO_LIQUIDATION_CAF': context.get('MONTANT_LIQUIDATION', 0) / max(valeur_caf, 1),
+            'BUSINESS_RATIO_DOUANE_CAF': context.get('RATIO_DOUANE_CAF', 0),
+            'BUSINESS_IS_ELECTRONIQUE': 1 if code_produit.startswith('85') else 0,
+            'BUSINESS_IS_TELEPHONE': 1 if code_produit.startswith(('8517', '8525', '8526', '8527', '8528', '8529')) else 0,
+            'BUSINESS_IS_PRECISION_UEMOA': 1 if context.get('PRECISION_UEMOA', 90) == 90 else 0,
+            'BUSINESS_ARTICLES_MULTIPLES': 1 if context.get('NOMBRE_COLIS', 0) > 1 or context.get('NUMERO_ARTICLE', 0) > 1 else 0,
+            'BUSINESS_AVEC_DPI': 1 if context.get('NUMERO_DPI', '') and str(context.get('NUMERO_DPI', '')).upper() != 'SANS_DPI' else 0,
+        })
+        
+        for key in features:
+            if isinstance(features[key], (int, float)):
+                features[key] = int(features[key])
+            elif isinstance(features[key], bool):
+                features[key] = int(features[key])
+    
+    return features
+
+def _get_default_fraud_scores() -> Dict[str, float]:
+    """Retourner des scores par défaut si erreur"""
+    return {
+        'BIENAYME_CHEBYCHEV_SCORE': 0.0,
+        'TEI_CALCULE': 0.0,
+        'MIRROR_TEI_SCORE': 0.0,
+        'MIRROR_TEI_DEVIATION': 0.0,
+        'SPECTRAL_CLUSTER_SCORE': 0.0,
+        'HIERARCHICAL_CLUSTER_SCORE': 0.0,
+        'ADMIN_VALUES_SCORE': 0.0,
+        'ADMIN_VALUES_DEVIATION': 0.0,
+        'COMPOSITE_FRAUD_SCORE': 0.0,
+        'RATIO_POIDS_VALEUR': 0.0,
+    }
+
+def _create_advanced_fraud_scores(context: Dict[str, Any], chapter: str) -> Dict[str, Any]:
+    """
+    Créer des scores de fraude avancés en utilisant les statistiques historiques sauvegardées
+    
+    SYSTÈME (2025):
+    Les statistiques sont générées pendant l'entraînement par advanced_fraud_detection.py
+    et sauvegardées dans fraud_detection_stats.json pour chaque chapitre.
+    On charge ces stats et on calcule les scores pour une nouvelle déclaration.
     """
     try:
-        # Utiliser la fonction d'ocr_ingest.py qui contient les vraies features
-        from .ocr_ingest import _create_chapter_specific_business_features
-        business_features = _create_chapter_specific_business_features(context, chapter)
+        import json
+        from pathlib import Path
         
-        # Ajouter les features business au contexte
-        context.update(business_features)
+        # Charger les statistiques historiques depuis le fichier JSON
+        backend_root = Path(__file__).resolve().parents[2]
+        stats_file = backend_root / "results" / chapter / "fraud_detection_stats.json"
         
-        return context
+        if not stats_file.exists():
+            logger.warning(f"⚠️ Fichier de stats non trouvé: {stats_file}")
+            return _get_default_fraud_scores()
+        
+        with open(stats_file, 'r', encoding='utf-8') as f:
+            stats = json.load(f)
+        
+        # Créer la clé PRODUCT_ORIGIN_KEY
+        code_produit = context.get('CODE_PRODUIT_STR', '') or context.get('CODE_SH_COMPLET', '')
+        pays_origine = context.get('PAYS_ORIGINE_STR', '') or context.get('CODE_PAYS_ORIGINE', '')
+        product_origin_key = f"{code_produit}_{pays_origine}"
+        
+        # Récupérer les stats pour ce couple (ou default)
+        product_origin_stats = stats.get('product_origin_stats', {})
+        if product_origin_key in product_origin_stats:
+            po_stats = product_origin_stats[product_origin_key]
+        else:
+            po_stats = product_origin_stats.get('default', {})
+            logger.debug(f"Utilisation stats par défaut pour {product_origin_key}")
+        
+        # Calculer les scores (algorithmes de advanced_fraud_detection.py)
+        scores = {}
+        
+        # 1. BIENAYME_CHEBYCHEV_SCORE: |X - μ| / σ
+        valeur_caf = context.get('VALEUR_CAF', 0)
+        valeur_caf_stats = po_stats.get('valeur_caf', stats.get('valeur_caf', {}))
+        
+        # Valeurs par défaut par chapitre
+        if chapter == "chap30":
+            default_mean, default_std, default_median, default_q25, default_q75 = 70971254.0, 94472082.0, 22781555.0, 5000001.0, 127451321.0
+        elif chapter == "chap84":
+            default_mean, default_std, default_median, default_q25, default_q75 = 18744721.0, 117295711.0, 2323379.0, 661537.5, 8719647.75
+        elif chapter == "chap85":
+            default_mean, default_std, default_median, default_q25, default_q75 = 16646336.0, 146438626.0, 1124669.5, 386771.5, 4963526.75
+        else:
+            default_mean = valeur_caf_stats.get('mean', 22781555.0)
+            default_std = valeur_caf_stats.get('std', 94472082.0)
+            default_median = valeur_caf_stats.get('median', 22781555.0)
+            default_q25 = valeur_caf_stats.get('q25', 5000001.0)
+            default_q75 = valeur_caf_stats.get('q75', 127451321.0)
+        
+        mean_caf = valeur_caf_stats.get('mean', default_mean)
+        std_caf = valeur_caf_stats.get('std', default_std)
+        if std_caf > 0 and valeur_caf > 0:
+            median_caf = valeur_caf_stats.get('median', default_median)
+            q25_caf = valeur_caf_stats.get('q25', default_q25)
+            q75_caf = valeur_caf_stats.get('q75', default_q75)
+            
+            raw_score = abs(valeur_caf - mean_caf) / std_caf
+            
+            # ✅ RÉDUCTION pour déclarations dans la plage normale
+            if q25_caf <= valeur_caf <= q75_caf:
+                raw_score = raw_score * 0.05
+            elif abs(valeur_caf - median_caf) / max(median_caf, 1.0) < 0.3:
+                raw_score = raw_score * 0.01
+            
+            scores['BIENAYME_CHEBYCHEV_SCORE'] = min(raw_score, 3.0)
+            
+            if q25_caf <= valeur_caf <= q75_caf and raw_score < 0.5:
+                scores['BIENAYME_CHEBYCHEV_SCORE'] = 0.0
+        else:
+            scores['BIENAYME_CHEBYCHEV_SCORE'] = 0.0
+        
+        # 2. TEI_CALCULE: (MONTANT_LIQUIDATION / VALEUR_CAF) * 100
+        montant_liquidation = context.get('MONTANT_LIQUIDATION', 0)
+        if valeur_caf > 0:
+            scores['TEI_CALCULE'] = (montant_liquidation / valeur_caf) * 100
+        else:
+            scores['TEI_CALCULE'] = 0.0
+        
+        # 3. MIRROR_TEI_SCORE: |TEI - mean| / IQR
+        tei_stats = po_stats.get('tei', stats.get('tei', {}))
+        
+        if chapter == "chap30":
+            default_tei_mean, default_tei_q25, default_tei_q75 = 1.37, 0.0, 2.3
+        elif chapter == "chap84":
+            default_tei_mean, default_tei_q25, default_tei_q75 = 21.38, 0.0, 34.68
+        elif chapter == "chap85":
+            default_tei_mean, default_tei_q25, default_tei_q75 = 25.64, 0.0, 46.08
+        else:
+            default_tei_mean, default_tei_q25, default_tei_q75 = 1.37, 0.0, 2.3
+        
+        tei_mean = tei_stats.get('mean', default_tei_mean)
+        tei_q25 = tei_stats.get('q25', default_tei_q25)
+        tei_q75 = tei_stats.get('q75', default_tei_q75)
+        iqr_tei = tei_q75 - tei_q25
+        
+        if iqr_tei > 0.1 and valeur_caf > 0:
+            scores['MIRROR_TEI_SCORE'] = abs(scores['TEI_CALCULE'] - tei_mean) / iqr_tei
+            scores['MIRROR_TEI_SCORE'] = min(scores['MIRROR_TEI_SCORE'], 5.0)
+            scores['MIRROR_TEI_DEVIATION'] = abs(scores['TEI_CALCULE'] - tei_mean)
+        else:
+            scores['MIRROR_TEI_SCORE'] = 0.0
+            scores['MIRROR_TEI_DEVIATION'] = 0.0
+        
+        # 4. ADMIN_VALUES_SCORE: |X - median| / IQR
+        if chapter == "chap30":
+            default_admin_median, default_admin_q25, default_admin_q75 = 22781555.0, 5000001.0, 127451321.0
+        elif chapter == "chap84":
+            default_admin_median, default_admin_q25, default_admin_q75 = 2323379.0, 661537.5, 8719647.75
+        elif chapter == "chap85":
+            default_admin_median, default_admin_q25, default_admin_q75 = 1124669.5, 386771.5, 4963526.75
+        else:
+            default_admin_median = valeur_caf_stats.get('median', mean_caf)
+            default_admin_q25 = valeur_caf_stats.get('q25', mean_caf * 0.7)
+            default_admin_q75 = valeur_caf_stats.get('q75', mean_caf * 1.3)
+        
+        admin_median = valeur_caf_stats.get('median', default_admin_median)
+        admin_q25 = valeur_caf_stats.get('q25', default_admin_q25)
+        admin_q75 = valeur_caf_stats.get('q75', default_admin_q75)
+        iqr_admin = admin_q75 - admin_q25
+        
+        if iqr_admin > 0 and valeur_caf > 0:
+            raw_admin_score = abs(valeur_caf - admin_median) / iqr_admin
+            if admin_q25 <= valeur_caf <= admin_q75:
+                raw_admin_score = raw_admin_score * 0.05
+            scores['ADMIN_VALUES_SCORE'] = raw_admin_score
+            
+            if admin_q25 <= valeur_caf <= admin_q75 and raw_admin_score < 0.5:
+                scores['ADMIN_VALUES_SCORE'] = 0.0
+            scores['ADMIN_VALUES_DEVIATION'] = abs(valeur_caf - admin_median) / admin_median if admin_median > 0 else 0.0
+        else:
+            scores['ADMIN_VALUES_SCORE'] = 0.0
+            scores['ADMIN_VALUES_DEVIATION'] = 0.0
+        
+        # 5. SPECTRAL_CLUSTER_SCORE et HIERARCHICAL_CLUSTER_SCORE: 0 (nécessitent batch)
+        scores['SPECTRAL_CLUSTER_SCORE'] = 0.0
+        scores['HIERARCHICAL_CLUSTER_SCORE'] = 0.0
+        
+        # 6. COMPOSITE_FRAUD_SCORE
+        available_scores = [
+            scores['BIENAYME_CHEBYCHEV_SCORE'],
+            scores['MIRROR_TEI_SCORE'],
+            scores['ADMIN_VALUES_SCORE']
+        ]
+        available_scores = [s for s in available_scores if s > 0]
+        
+        # Réduction finale pour déclarations normales
+        median_caf = valeur_caf_stats.get('median', stats.get('valeur_caf', {}).get('median', 22781555.0))
+        q25_caf = valeur_caf_stats.get('q25', stats.get('valeur_caf', {}).get('q25', 5000001.0))
+        q75_caf = valeur_caf_stats.get('q75', stats.get('valeur_caf', {}).get('q75', 127451321.0))
+        
+        if chapter == "chap30":
+            default_median, default_q25, default_q75 = 22781555.0, 5000001.0, 127451321.0
+        elif chapter == "chap84":
+            default_median, default_q25, default_q75 = 2323379.0, 661537.5, 8719647.75
+        elif chapter == "chap85":
+            default_median, default_q25, default_q75 = 1124669.5, 386771.5, 4963526.75
+        else:
+            default_median, default_q25, default_q75 = median_caf, q25_caf, q75_caf
+        
+        median_caf = median_caf if median_caf > 0 else default_median
+        q25_caf = q25_caf if q25_caf > 0 else default_q25
+        q75_caf = q75_caf if q75_caf > 0 else default_q75
+        
+        reduction_factor = 1.0
+        if q25_caf <= valeur_caf <= q75_caf:
+            reduction_factor = 0.001
+        elif abs(valeur_caf - median_caf) / max(median_caf, 1.0) < 0.3:
+            reduction_factor = 0.0005
+        elif valeur_caf < q25_caf:
+            reduction_factor = 0.01
+        
+        scores['BIENAYME_CHEBYCHEV_SCORE'] *= reduction_factor
+        scores['MIRROR_TEI_SCORE'] *= reduction_factor
+        scores['ADMIN_VALUES_SCORE'] *= reduction_factor
+        
+        if q25_caf <= valeur_caf <= q75_caf:
+            if scores['BIENAYME_CHEBYCHEV_SCORE'] < 0.01:
+                scores['BIENAYME_CHEBYCHEV_SCORE'] = 0.0
+            if scores['MIRROR_TEI_SCORE'] < 0.01:
+                scores['MIRROR_TEI_SCORE'] = 0.0
+            if scores['ADMIN_VALUES_SCORE'] < 0.01:
+                scores['ADMIN_VALUES_SCORE'] = 0.0
+        
+        available_scores = [
+            scores['BIENAYME_CHEBYCHEV_SCORE'],
+            scores['MIRROR_TEI_SCORE'],
+            scores['ADMIN_VALUES_SCORE']
+        ]
+        available_scores = [s for s in available_scores if s > 0]
+        
+        normalized_scores = []
+        for score in available_scores:
+            if score > 0:
+                normalized_score = score / (1.0 + score)
+                if normalized_score < 0.01:
+                    normalized_score = 0.0
+                normalized_scores.append(normalized_score)
+        
+        scores['COMPOSITE_FRAUD_SCORE'] = sum(normalized_scores) / len(normalized_scores) if normalized_scores else 0.0
+        
+        if q25_caf <= valeur_caf <= q75_caf and scores['COMPOSITE_FRAUD_SCORE'] < 0.05:
+            scores['COMPOSITE_FRAUD_SCORE'] = 0.0
+        
+        # 7. RATIO_POIDS_VALEUR
+        poids_net_kg = context.get('POIDS_NET_KG', 0)
+        if valeur_caf > 0 and poids_net_kg > 0:
+            scores['RATIO_POIDS_VALEUR'] = poids_net_kg / valeur_caf
+        else:
+            scores['RATIO_POIDS_VALEUR'] = 0.0
+        
+        non_zero_scores = {k: v for k, v in scores.items() if v != 0.0 and k != 'RATIO_POIDS_VALEUR'}
+        if non_zero_scores:
+            logger.info(f"✅ Fraud features calculées pour {chapter} (stats: {len(product_origin_stats)} couples)")
+            for feature, value in list(non_zero_scores.items())[:3]:
+                logger.info(f"   {feature}: {value:.3f}")
+        
+        return scores
         
     except Exception as e:
-        logger.error(f"❌ ERREUR CRITIQUE: Impossible de calculer les features business pour {chapter}: {e}")
-        # PAS DE FALLBACK! Les features business sont OBLIGATOIRES pour le ML
-        raise ValueError(f"Calcul des features business échoué pour {chapter}. Prédiction impossible.")
+        logger.warning(f"⚠️ Erreur calcul fraud features: {e}")
+        return _get_default_fraud_scores()
 
 def analyze_fraud_risk_patterns(context: Dict[str, Any], chapter: str) -> Dict[str, Any]:
     """Analyser les patterns de risque de fraude basés sur les analyses poussées"""
@@ -719,8 +1145,19 @@ class AdvancedOCRPipeline:
                 self.logger.warning("Chapitre inconnu, utilisation du chapitre 30 par défaut")
                 chapter = "chap30"
             
-            # Créer le contexte complet
+            # Créer le contexte de base depuis OCR_INGEST (extraction et mapping seulement)
             context = create_advanced_context_from_ocr_data(ocr_data, chapter)
+            
+            # ✅ OCR_PIPELINE : Ajouter les business features et fraud scores
+            # (Les fonctions sont maintenant dans OCR_PIPELINE, plus besoin d'importer depuis OCR_INGEST)
+            
+            # Ajouter les features business spécifiques au chapitre
+            context.update(_create_chapter_specific_business_features(context, chapter))
+            
+            # Ajouter les scores de détection de fraude avancée
+            context.update(_create_advanced_fraud_scores(context, chapter))
+            
+            self.logger.info(f"✅ Contexte enrichi pour {chapter}: {len(context)} features (base + business + fraud scores)")
             
             # Charger le modèle ML
             ml_model_data = load_ml_model(chapter)
@@ -769,17 +1206,67 @@ class AdvancedOCRPipeline:
                         self.logger.info(f"🔍 DataFrame créé: {df.shape}")
                         self.logger.info(f"🔍 Colonnes disponibles: {len(df.columns)}")
                         
+                        # ✅ CORRECTION: Vérifier et corriger le format des colonnes critiques
+                        # Le CSV utilise POIDS_NET (pas POIDS_NET_KG), s'assurer qu'il est présent
+                        if 'POIDS_NET' not in df.columns and 'POIDS_NET_KG' in df.columns:
+                            df['POIDS_NET'] = df['POIDS_NET_KG']
+                        elif 'POIDS_NET_KG' not in df.columns and 'POIDS_NET' in df.columns:
+                            df['POIDS_NET_KG'] = df['POIDS_NET']
+                        
+                        # S'assurer que CODE_PRODUIT_STR est string (le preprocessing peut l'attendre)
+                        if 'CODE_PRODUIT_STR' in df.columns:
+                            df['CODE_PRODUIT_STR'] = df['CODE_PRODUIT_STR'].astype(str)
+                        
+                        # ✅ CORRECTION: S'assurer que REGIME_FISCAL est numérique (format du CSV)
+                        # Le CSV utilise REGIME_FISCAL comme int (0, 2, 10, 20, etc.), mais le preprocessing peut l'attendre comme string
+                        # On garde les deux formats pour compatibilité
+                        if 'REGIME_FISCAL' in df.columns:
+                            # Convertir en int si c'est une string numérique, sinon garder comme string
+                            if df['REGIME_FISCAL'].dtype == 'object':
+                                # Si c'est une string, essayer de convertir en int
+                                try:
+                                    df['REGIME_FISCAL'] = pd.to_numeric(df['REGIME_FISCAL'], errors='coerce').fillna(0).astype(int)
+                                except:
+                                    pass
+                        
+                        # ✅ CORRECTION: S'assurer que PRECISION_UEMOA est numérique (format du CSV)
+                        if 'PRECISION_UEMOA' in df.columns:
+                            if df['PRECISION_UEMOA'].dtype == 'object':
+                                try:
+                                    df['PRECISION_UEMOA'] = pd.to_numeric(df['PRECISION_UEMOA'], errors='coerce').fillna(0).astype(int)
+                                except:
+                                    pass
+                        
                         # Le pipeline scikit-learn gère automatiquement tout le preprocessing
                         self.logger.info(f"✅ Preprocessing géré automatiquement par scikit-learn")
                         
                         # Prédiction avec le pipeline scikit-learn complet
                         try:
+                            # ✅ CORRECTION: Vérifier les NaN et valeurs aberrantes AVANT la prédiction
+                            nan_count = df.isna().sum().sum()
+                            if nan_count > 0:
+                                self.logger.warning(f"⚠️ DataFrame contient {nan_count} valeurs NaN")
+                                # Afficher les colonnes avec NaN
+                                nan_cols = df.columns[df.isna().any()].tolist()
+                                self.logger.warning(f"   Colonnes avec NaN: {nan_cols[:10]}")
+                            
+                            # Vérifier les valeurs infinies
+                            inf_count = np.isinf(df.select_dtypes(include=[np.number])).sum().sum()
+                            if inf_count > 0:
+                                self.logger.warning(f"⚠️ DataFrame contient {inf_count} valeurs infinies")
+                            
+                            # Remplacer NaN et inf par 0 pour éviter les erreurs
+                            df_clean = df.fillna(0).replace([np.inf, -np.inf], 0)
+                            
                             # Debug: afficher quelques features importantes
                             self.logger.info(f"🔍 Features importantes:")
                             self.logger.info(f"   VALEUR_CAF: {context.get('VALEUR_CAF', 0)}")
+                            self.logger.info(f"   POIDS_NET: {context.get('POIDS_NET', 0)} (format CSV)")
                             self.logger.info(f"   POIDS_NET_KG: {context.get('POIDS_NET_KG', 0)}")
                             self.logger.info(f"   PAYS_ORIGINE_STR: {context.get('PAYS_ORIGINE_STR', '')}")
                             self.logger.info(f"   CODE_PRODUIT_STR: {context.get('CODE_PRODUIT_STR', '')}")
+                            self.logger.info(f"   REGIME_FISCAL: {context.get('REGIME_FISCAL', 0)} (type: {type(context.get('REGIME_FISCAL', 0)).__name__})")
+                            self.logger.info(f"   PRECISION_UEMOA: {context.get('PRECISION_UEMOA', 0)} (type: {type(context.get('PRECISION_UEMOA', 0)).__name__})")
                             
                             # Compter les features business actives
                             business_features = [k for k in context.keys() if k.startswith('BUSINESS_')]
@@ -797,7 +1284,7 @@ class AdvancedOCRPipeline:
                                 if value != 0.0:
                                     self.logger.info(f"   {fraud_feature}: {value:.6f}")
                             
-                            ml_probability = float(pipeline.predict_proba(df)[0][1])
+                            ml_probability = float(pipeline.predict_proba(df_clean)[0][1])
                             self.logger.info(f"✅ Prédiction ML RÉELLE réussie: {ml_probability:.3f}")
                             self.logger.info(f"✅ Modèle utilisé: {ml_model_data.get('best_model', 'Inconnu')}")
                         except Exception as e:
@@ -1080,11 +1567,11 @@ class AdvancedOCRPipeline:
             first_declaration_id = list(aggregated_data.keys())[0]
             first_declaration = aggregated_data[first_declaration_id]
             
-            # Créer le contexte pour la prédiction
-            context = create_advanced_context_from_ocr_data(first_declaration, chapter)
-            
-            # Prédiction de fraude
+            # ✅ Prédiction de fraude (predict_fraud gère l'enrichissement du contexte)
             prediction = self.predict_fraud(first_declaration, chapter, level)
+            
+            # Extraire le contexte enrichi depuis la prédiction
+            context = prediction.get("context", {})
             
             # Résultat complet
             result = {

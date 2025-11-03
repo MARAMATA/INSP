@@ -425,6 +425,7 @@ def apply_field_mapping(data: Dict[str, Any], mapping_type: str = "csv_to_ml") -
             # Mapping des champs standard vers les features ML
             standard_to_ml = {
                 "poids_net": "POIDS_NET_KG",
+                "POIDS_NET": "POIDS_NET_KG",  # ✅ CORRECTION: Ajouter aussi POIDS_NET
                 "quantite_complement": "QUANTITE_COMPLEMENT", 
                 "code_sh_complet": "CODE_PRODUIT_STR",
                 "pays_origine": "PAYS_ORIGINE_STR",
@@ -1017,33 +1018,39 @@ def create_advanced_context_from_ocr_data(ocr_data: Dict[str, Any], chapter: str
             # Features numériques de base (utilisées par tous les modèles ML)
             'VALEUR_CAF', 'VALEUR_DOUANE', 'MONTANT_LIQUIDATION', 'POIDS_NET',
             'VALEUR_UNITAIRE_KG', 'TAUX_DROITS_PERCENT', 'RATIO_DOUANE_CAF',
-            'NUMERO_ARTICLE', 'PRECISION_UEMOA',
+            'NUMERO_ARTICLE', 'PRECISION_UEMOA', 'REGIME_FISCAL',  # ✅ REGIME_FISCAL est numérique dans le CSV
             
             # Features numériques supplémentaires
             'POIDS_NET_KG', 'NOMBRE_COLIS', 'QUANTITE_COMPLEMENT', 'QUANTITE_MERCURIALE',
             'VALEUR_UNITAIRE_PAR_KG', 'VALEUR_FOB', 'VALEUR_PAR_COLIS',
             'POIDS_BRUT', 'ASSURANCE', 'FRET', 'TAUX', 'MONTANT', 'BASE_TAXABLE', 'NOMBRE_CONTENEUR',
             
-            # Features de détection de fraude avancée
-            'BIENAYME_CHEBYCHEV_SCORE', 'TEI_CALCULE', 'MIRROR_TEI_SCORE',
-            'MIRROR_TEI_DEVIATION', 'SPECTRAL_CLUSTER_SCORE', 'HIERARCHICAL_CLUSTER_SCORE',
-            'ADMIN_VALUES_SCORE', 'ADMIN_VALUES_DEVIATION', 'COMPOSITE_FRAUD_SCORE', 'RATIO_POIDS_VALEUR'
+            # ✅ NOTE: Les features de détection de fraude avancée (BIENAYME_CHEBYCHEV_SCORE, etc.)
+            # ne sont PAS calculées ici dans OCR_INGEST. Elles seront calculées par OCR_PIPELINE
+            # via _create_advanced_fraud_scores() après que le contexte de base soit créé.
         ]
         
         for feature in numeric_features:
             value = mapped_data.get(feature, 0)
             try:
-                context[feature] = float(value) if value is not None else 0.0
+                # ✅ CORRECTION: Convertir en float pour les features numériques
+                # Note: CODE_PRODUIT_STR, REGIME_FISCAL, PRECISION_UEMOA peuvent être numériques dans le CSV
+                # mais doivent aussi être disponibles en string pour le preprocessing
+                if value is None or (isinstance(value, str) and value.strip() == ''):
+                    context[feature] = 0.0
+                else:
+                    context[feature] = float(value)
                 if value != 0 and value != 0.0:
                     logger.debug(f"✅ Feature numérique {feature}: {value} -> {context[feature]}")
-            except (ValueError, TypeError):
+            except (ValueError, TypeError) as e:
                 context[feature] = 0.0
-                logger.debug(f"⚠️ Erreur conversion {feature}: {value} -> 0.0")
+                logger.debug(f"⚠️ Erreur conversion {feature}: {value} -> 0.0 ({e})")
         
         # Features string avec conversion sécurisée
+        # ✅ CORRECTION: CODE_PRODUIT_STR, REGIME_FISCAL, PRECISION_UEMOA peuvent être numériques dans le CSV
         string_features = [
             'CODE_PRODUIT_STR', 'CODE_SH_COMPLET', 'PAYS_ORIGINE_STR', 'PAYS_PROVENANCE_STR', 'BUREAU',
-            'REGIME_COMPLET', 'REGIME_FISCAL', 'NUMERO_ARTICLE_STR', 'PRECISION_UEMOA_STR', 'DATE_DECLARATION_STR',
+            'REGIME_COMPLET', 'NUMERO_ARTICLE_STR', 'PRECISION_UEMOA_STR', 'DATE_DECLARATION_STR',
             'CODE_SH', 'LIBELLE_TARIF', 'DESCRIPTION_COMMERCIALE', 'CATEGORIE_PRODUIT',
             'ALERTE_MOTS_CLES', 'DESTINATION', 'BUREAU_FRONTIERE', 'TYPE_REGIME',
             'REGIME_DOUANIER', 'REGIME_FISCAL_CODE', 'STATUT_BAE', 'CODE_TAXE',
@@ -1058,272 +1065,106 @@ def create_advanced_context_from_ocr_data(ocr_data: Dict[str, Any], chapter: str
         
         for feature in string_features:
             value = mapped_data.get(feature, '')
-            context[feature] = str(value) if value is not None else ''
+            # ✅ CORRECTION: CODE_PRODUIT_STR doit être une string dans le contexte final
+            # Le CSV peut l'avoir comme int (300490), donc on convertit toujours en string
+            if value is None:
+                context[feature] = ''
+            elif feature == 'CODE_PRODUIT_STR':
+                # Le CSV utilise CODE_PRODUIT_STR comme int, mais le preprocessing le traite comme string
+                if isinstance(value, (int, float)):
+                    context[feature] = str(int(value))
+                else:
+                    context[feature] = str(value) if value != '' else ''
+            else:
+                context[feature] = str(value) if value != '' else ''
+        
+        # ✅ CORRECTION: S'assurer que CODE_PRODUIT_STR est présent même si absent de mapped_data
+        # Vérifier aussi CODE_SH_COMPLET comme fallback
+        if not context.get('CODE_PRODUIT_STR') or context.get('CODE_PRODUIT_STR') == '':
+            code_sh = context.get('CODE_SH_COMPLET', '') or mapped_data.get('code_sh_complet', '')
+            if code_sh:
+                # Extraire le code produit (premiers 8 chiffres ou tout)
+                code_sh_str = str(code_sh).strip()
+                # Prendre les 8 premiers chiffres si c'est un code SH complet
+                if len(code_sh_str) >= 8:
+                    context['CODE_PRODUIT_STR'] = code_sh_str[:8]
+                else:
+                    context['CODE_PRODUIT_STR'] = code_sh_str
         
         # ÉTAPE 3: Calculer les ratios et features dérivées
+        # ✅ CORRECTION: Mapper poids_net vers POIDS_NET_KG si présent
+        if 'poids_net' in mapped_data and context.get('POIDS_NET_KG', 0) == 0:
+            try:
+                poids_value = float(mapped_data.get('poids_net', 0) or 0)
+                if poids_value > 0:
+                    context['POIDS_NET_KG'] = poids_value
+                    context['POIDS_NET'] = poids_value
+            except (ValueError, TypeError):
+                pass
+        
+        # ✅ CORRECTION: Le CSV utilise POIDS_NET (pas POIDS_NET_KG), donc s'assurer que POIDS_NET est présent
+        # Synchroniser les deux pour compatibilité
+        if context.get('POIDS_NET', 0) > 0 and context.get('POIDS_NET_KG', 0) == 0:
+            context['POIDS_NET_KG'] = context['POIDS_NET']
+        elif context.get('POIDS_NET_KG', 0) > 0 and context.get('POIDS_NET', 0) == 0:
+            context['POIDS_NET'] = context['POIDS_NET_KG']
+        
+        # ✅ S'assurer que POIDS_NET est utilisé pour les calculs (format du CSV)
+        poids_net_for_calc = context.get('POIDS_NET', 0) or context.get('POIDS_NET_KG', 0)
+        
         context['VALEUR_UNITAIRE_KG'] = 0.0
         context['RATIO_DOUANE_CAF'] = 0.0
         
-        if context['POIDS_NET_KG'] > 0:
-            context['VALEUR_UNITAIRE_KG'] = context['VALEUR_CAF'] / context['POIDS_NET_KG']
+        if poids_net_for_calc > 0:
+            context['VALEUR_UNITAIRE_KG'] = context.get('VALEUR_CAF', 0) / poids_net_for_calc
+            # ✅ S'assurer que POIDS_NET est bien défini
+            context['POIDS_NET'] = poids_net_for_calc
         
-        if context['VALEUR_CAF'] > 0:
-            context['RATIO_DOUANE_CAF'] = context['TAUX_DROITS_PERCENT'] / 100.0
+        if context.get('VALEUR_CAF', 0) > 0:
+            context['RATIO_DOUANE_CAF'] = context.get('TAUX_DROITS_PERCENT', 0) / 100.0
         
-        # COMPATIBILITÉ: Ajouter POIDS_NET comme alias de POIDS_NET_KG pour les anciens modèles
-        if 'POIDS_NET_KG' in context:
-            context['POIDS_NET'] = context['POIDS_NET_KG']
+        # ✅ CORRECTION: S'assurer que REGIME_FISCAL est présent et dans le bon format
+        # Le CSV utilise REGIME_FISCAL comme int, donc on le garde comme float pour compatibilité
+        if 'REGIME_FISCAL' not in context or context.get('REGIME_FISCAL', 0) == '':
+            context['REGIME_FISCAL'] = 0.0
+        elif isinstance(context.get('REGIME_FISCAL'), str):
+            try:
+                context['REGIME_FISCAL'] = float(int(context['REGIME_FISCAL']))
+            except:
+                context['REGIME_FISCAL'] = 0.0
         
-        # Ajouter les features business spécifiques au chapitre
-        context.update(_create_chapter_specific_business_features(context, chapter))
+        # ✅ CORRECTION: S'assurer que PRECISION_UEMOA est présent et dans le bon format
+        if 'PRECISION_UEMOA' not in context or context.get('PRECISION_UEMOA', 0) == '':
+            context['PRECISION_UEMOA'] = 0.0
+        elif isinstance(context.get('PRECISION_UEMOA'), str):
+            try:
+                context['PRECISION_UEMOA'] = float(int(context['PRECISION_UEMOA']))
+            except:
+                context['PRECISION_UEMOA'] = 0.0
         
-        # Ajouter les scores de détection de fraude avancée (simulés pour l'OCR)
-        context.update(_create_advanced_fraud_scores(context, chapter))
-        
-        logger.info(f"Contexte avancé créé pour {chapter}: {len(context)} features")
+        # ✅ OCR_INGEST se limite à son travail : extraction, mapping et contexte de base
+        # Les business features et fraud scores seront ajoutés par OCR_PIPELINE
+        logger.info(f"Contexte de base créé pour {chapter}: {len(context)} features (business et fraud scores à ajouter par OCR_PIPELINE)")
         return context
         
     except Exception as e:
         logger.error(f"Erreur création contexte avancé pour {chapter}: {e}")
         return {}
 
-def _create_chapter_specific_business_features(context: Dict[str, Any], chapter: str) -> Dict[str, Any]:
-    """Créer les features business spécifiques à chaque chapitre"""
-    features = {}
-    
-    if chapter == "chap30":
-        # Features spécifiques au chapitre 30 (Produits pharmaceutiques)
-        code_produit = context.get('CODE_PRODUIT_STR', '') or context.get('CODE_SH_COMPLET', '')
-        pays_origine = context.get('PAYS_ORIGINE_STR', '') or context.get('CODE_PAYS_ORIGINE', '')
-        valeur_caf = context.get('VALEUR_CAF', 0)
-        poids_net = context.get('POIDS_NET', 0) or context.get('POIDS_NET_KG', 0)
-        valeur_unitaire_kg = context.get('VALEUR_UNITAIRE_KG', 0)
-        
-        # SEUILS AJUSTÉS POUR LE CHAPITRE 30 (basés sur les statistiques réelles)
-        # Les médicaments ont des valeurs élevées NORMALES, donc les seuils doivent être TRÈS élevés
-        # Récupérer la description commerciale
-        description = str(context.get('DESCRIPTION_COMMERCIALE', '') or context.get('LIBELLE_TARIF', '')).lower()
-        
-        features.update({
-            # Features business spécifiques au chapitre 30 (Features DISCRIMINANTES pour la fraude)
-            # FEATURES PRINCIPALES: GLISSEMENT TARIFAIRE (LES PLUS DISCRIMINANTES)
-            'BUSINESS_GLISSEMENT_TARIFAIRE': 1 if not code_produit.startswith('30') else 0,  # CODE_SH ≠ 30 = FRAUDE MAJEURE
-            'BUSINESS_GLISSEMENT_DESCRIPTION': 1 if any(mot in description for mot in ['glissement', 'cosmet', 'parfum', 'beauté', 'maquillage', 'soin', 'toilette']) else 0,
-            # SUPPRIMÉ: BUSINESS_GLISSEMENT_COSMETIQUE - Redondant avec GLISSEMENT_TARIFAIRE
-            # SUPPRIMÉ: BUSINESS_GLISSEMENT_PAYS_COSMETIQUES - Redondant avec GLISSEMENT_TARIFAIRE
-            'BUSINESS_GLISSEMENT_RATIO_SUSPECT': 1 if context.get('RATIO_POIDS_VALEUR', 0) < 0.000001 else 0,
-            'BUSINESS_RISK_PAYS_HIGH': 1 if pays_origine in ['CN', 'IN', 'PK'] else 0,
-            'BUSINESS_ORIGINE_DIFF_PROVENANCE': 1 if pays_origine != context.get('PAYS_PROVENANCE_STR', '') else 0,
-            'BUSINESS_REGIME_PREFERENTIEL': 1 if context.get('REGIME_FISCAL', '').lower() in ['preferentiel', 'pref'] else 0,
-            'BUSINESS_REGIME_NORMAL': 1 if context.get('REGIME_FISCAL', '').lower() in ['normal', 'standard'] else 0,
-            
-            # VALEURS: Seuils ajustés pour chapitre 30 (médicaments = valeurs élevées normales)
-            # ANCIEN: 10M et 50M → NOUVEAU: 100M et 500M (plus discriminant)
-            'BUSINESS_VALEUR_ELEVEE': 1 if valeur_caf > 100000000 else 0,  # 100M FCFA au lieu de 10M
-            'BUSINESS_VALEUR_EXCEPTIONNELLE': 1 if valeur_caf > 500000000 else 0,  # 500M FCFA au lieu de 50M
-            
-            'BUSINESS_POIDS_ELEVE': 1 if poids_net > 1000 else 0,  # 1 tonne au lieu de 100kg
-            'BUSINESS_DROITS_ELEVES': 1 if context.get('TAUX_DROITS_PERCENT', 0) > 20 else 0,
-            'BUSINESS_RATIO_LIQUIDATION_CAF': context.get('MONTANT_LIQUIDATION', 0) / max(context.get('VALEUR_CAF', 1), 1),
-            'BUSINESS_RATIO_DOUANE_CAF': context.get('RATIO_DOUANE_CAF', 0),
-            # BUSINESS_IS_MEDICAMENT SUPPRIMÉ - Toujours 1 pour chap30, non discriminant
-            'BUSINESS_IS_ANTIPALUDEEN': 1 if 'antipalud' in code_produit.lower() else 0,
-            # BUSINESS_IS_PRECISION_UEMOA SUPPRIMÉ - Toujours 1 pour UEMOA, non discriminant
-            'BUSINESS_ARTICLES_MULTIPLES': 1 if context.get('NOMBRE_COLIS', 0) > 1 else 0,
-            'BUSINESS_AVEC_DPI': 1 if context.get('NUMERO_DPI', '') else 0,
-            # NOUVELLES FEATURES DISCRIMINANTES pour chap30:
-            'BUSINESS_MEDICAMENT_CONTROLE': 1 if code_produit in ['30049000', '30039000', '30041000'] else 0,  # Médicaments contrôlés
-            # SUPPRIMÉ: 'BUSINESS_GLISSEMENT_MEDICAMENT' - redondant avec BUSINESS_GLISSEMENT_TARIFAIRE
-            
-            # VALEUR UNITAIRE: Seuil ajusté (10,000 FCFA/kg au lieu de 1,000 FCFA/kg)
-            'BUSINESS_VALEUR_UNITAIRE_SUSPECTE': 1 if valeur_unitaire_kg > 10000 else 0,  # Médicaments = valeur unitaire élevée normale
-        })
-        
-    elif chapter == "chap84":
-        # Features spécifiques au chapitre 84 (Machines et équipements)
-        code_produit = context.get('CODE_PRODUIT_STR', '') or context.get('CODE_SH_COMPLET', '')
-        pays_origine = context.get('PAYS_ORIGINE_STR', '') or context.get('CODE_PAYS_ORIGINE', '')
-        
-        features.update({
-            # Features business spécifiques au chapitre 84 (TOUTES les features du modèle ML)
-            'BUSINESS_GLISSEMENT_MACHINE': 1 if code_produit.startswith(('82', '83', '86', '87', '88', '89')) else 0,
-            'BUSINESS_GLISSEMENT_PAYS_MACHINES': 1 if pays_origine in ['CN', 'DE', 'JP', 'KR'] else 0,
-            'BUSINESS_GLISSEMENT_RATIO_SUSPECT': 1 if context.get('RATIO_DOUANE_CAF', 0) > 0.5 else 0,
-            'BUSINESS_RISK_PAYS_HIGH': 1 if pays_origine in ['CN', 'IN', 'PK'] else 0,
-            'BUSINESS_ORIGINE_DIFF_PROVENANCE': 1 if pays_origine != context.get('PAYS_PROVENANCE_STR', '') else 0,
-            'BUSINESS_REGIME_PREFERENTIEL': 1 if context.get('REGIME_FISCAL', '').lower() in ['preferentiel', 'pref'] else 0,
-            'BUSINESS_REGIME_NORMAL': 1 if context.get('REGIME_FISCAL', '').lower() in ['normal', 'standard'] else 0,
-            'BUSINESS_VALEUR_ELEVEE': 1 if context.get('VALEUR_CAF', 0) > 10000000 else 0,
-            'BUSINESS_VALEUR_EXCEPTIONNELLE': 1 if context.get('VALEUR_CAF', 0) > 50000000 else 0,
-            'BUSINESS_POIDS_ELEVE': 1 if context.get('POIDS_NET', 0) > 1000 else 0,
-            'BUSINESS_DROITS_ELEVES': 1 if context.get('TAUX_DROITS_PERCENT', 0) > 20 else 0,
-            'BUSINESS_RATIO_LIQUIDATION_CAF': context.get('MONTANT_LIQUIDATION', 0) / max(context.get('VALEUR_CAF', 1), 1),
-            'BUSINESS_RATIO_DOUANE_CAF': context.get('RATIO_DOUANE_CAF', 0),
-            'BUSINESS_IS_MACHINE': 1 if code_produit.startswith('84') else 0,
-            'BUSINESS_IS_ELECTRONIQUE': 1 if code_produit.startswith(('8471', '8473', '8474', '8475', '8476', '8477', '8478', '8479')) else 0,
-            # BUSINESS_IS_PRECISION_UEMOA SUPPRIMÉ - Toujours 1 pour UEMOA, non discriminant
-            'BUSINESS_ARTICLES_MULTIPLES': 1 if context.get('NOMBRE_COLIS', 0) > 1 else 0,
-            'BUSINESS_AVEC_DPI': 1 if context.get('NUMERO_DPI', '') else 0,
-        })
-        
-    elif chapter == "chap85":
-        # Features spécifiques au chapitre 85 (Appareils électriques)
-        code_produit = context.get('CODE_PRODUIT_STR', '') or context.get('CODE_SH_COMPLET', '')
-        pays_origine = context.get('PAYS_ORIGINE_STR', '') or context.get('CODE_PAYS_ORIGINE', '')
-        
-        features.update({
-            # Features business spécifiques au chapitre 85 (TOUTES les features du modèle ML)
-            'BUSINESS_GLISSEMENT_ELECTRONIQUE': 1 if code_produit.startswith(('84', '86', '87', '90', '91', '92', '93', '94', '95', '96')) else 0,
-            'BUSINESS_GLISSEMENT_PAYS_ELECTRONIQUES': 1 if pays_origine in ['CN', 'TW', 'KR', 'SG', 'MY'] else 0,
-            'BUSINESS_GLISSEMENT_RATIO_SUSPECT': 1 if context.get('RATIO_DOUANE_CAF', 0) > 0.5 else 0,
-            'BUSINESS_RISK_PAYS_HIGH': 1 if pays_origine in ['CN', 'IN', 'PK'] else 0,
-            'BUSINESS_ORIGINE_DIFF_PROVENANCE': 1 if pays_origine != context.get('PAYS_PROVENANCE_STR', '') else 0,
-            'BUSINESS_REGIME_PREFERENTIEL': 1 if context.get('REGIME_FISCAL', '').lower() in ['preferentiel', 'pref'] else 0,
-            'BUSINESS_REGIME_NORMAL': 1 if context.get('REGIME_FISCAL', '').lower() in ['normal', 'standard'] else 0,
-            'BUSINESS_VALEUR_ELEVEE': 1 if context.get('VALEUR_CAF', 0) > 10000000 else 0,
-            'BUSINESS_VALEUR_EXCEPTIONNELLE': 1 if context.get('VALEUR_CAF', 0) > 50000000 else 0,
-            'BUSINESS_POIDS_FAIBLE': 1 if context.get('POIDS_NET', 0) < 10 else 0,
-            'BUSINESS_DROITS_ELEVES': 1 if context.get('TAUX_DROITS_PERCENT', 0) > 20 else 0,
-            'BUSINESS_RATIO_LIQUIDATION_CAF': context.get('MONTANT_LIQUIDATION', 0) / max(context.get('VALEUR_CAF', 1), 1),
-            'BUSINESS_RATIO_DOUANE_CAF': context.get('RATIO_DOUANE_CAF', 0),
-            'BUSINESS_IS_ELECTRONIQUE': 1 if code_produit.startswith('85') else 0,
-            'BUSINESS_IS_TELEPHONE': 1 if code_produit.startswith(('8517', '8525', '8526', '8527', '8528', '8529')) else 0,
-            # BUSINESS_IS_PRECISION_UEMOA SUPPRIMÉ - Toujours 1 pour UEMOA, non discriminant
-            'BUSINESS_ARTICLES_MULTIPLES': 1 if context.get('NOMBRE_COLIS', 0) > 1 else 0,
-            'BUSINESS_AVEC_DPI': 1 if context.get('NUMERO_DPI', '') else 0,
-        })
-    
-    return features
-
-def _create_advanced_fraud_scores(context: Dict[str, Any], chapter: str) -> Dict[str, Any]:
-    """
-    Créer des scores de fraude avancés en utilisant les statistiques historiques sauvegardées
-    
-    SYSTÈME (2025):
-    Les statistiques sont générées pendant l'entraînement par advanced_fraud_detection.py
-    et sauvegardées dans fraud_detection_stats.json pour chaque chapitre.
-    On charge ces stats et on calcule les scores pour une nouvelle déclaration.
-    """
-    try:
-        import json
-        from pathlib import Path
-        
-        # Charger les statistiques historiques depuis le fichier JSON
-        backend_root = Path(__file__).resolve().parents[2]
-        stats_file = backend_root / "results" / chapter / "fraud_detection_stats.json"
-        
-        if not stats_file.exists():
-            logger.warning(f"⚠️ Fichier de stats non trouvé: {stats_file}")
-            return _get_default_fraud_scores()
-        
-        with open(stats_file, 'r', encoding='utf-8') as f:
-            stats = json.load(f)
-        
-        # Créer la clé PRODUCT_ORIGIN_KEY
-        code_produit = context.get('CODE_PRODUIT_STR', '') or context.get('CODE_SH_COMPLET', '')
-        pays_origine = context.get('PAYS_ORIGINE_STR', '') or context.get('CODE_PAYS_ORIGINE', '')
-        product_origin_key = f"{code_produit}_{pays_origine}"
-        
-        # Récupérer les stats pour ce couple (ou default)
-        product_origin_stats = stats.get('product_origin_stats', {})
-        if product_origin_key in product_origin_stats:
-            po_stats = product_origin_stats[product_origin_key]
-        else:
-            po_stats = product_origin_stats.get('default', {})
-            logger.debug(f"Utilisation stats par défaut pour {product_origin_key}")
-        
-        # Calculer les scores (algorithmes de advanced_fraud_detection.py)
-        scores = {}
-        
-        # 1. BIENAYME_CHEBYCHEV_SCORE: |X - μ| / σ
-        valeur_caf = context.get('VALEUR_CAF', 0)
-        valeur_caf_stats = po_stats.get('valeur_caf', stats.get('valeur_caf', {}))
-        mean_caf = valeur_caf_stats.get('mean', 1000000.0)
-        std_caf = valeur_caf_stats.get('std', 500000.0)
-        if std_caf > 0:
-            scores['BIENAYME_CHEBYCHEV_SCORE'] = abs(valeur_caf - mean_caf) / std_caf
-        else:
-            scores['BIENAYME_CHEBYCHEV_SCORE'] = 0.0
-        
-        # 2. TEI_CALCULE: (MONTANT_LIQUIDATION / VALEUR_CAF) * 100
-        montant_liquidation = context.get('MONTANT_LIQUIDATION', 0)
-        if valeur_caf > 0:
-            scores['TEI_CALCULE'] = (montant_liquidation / valeur_caf) * 100
-        else:
-            scores['TEI_CALCULE'] = 0.0
-        
-        # 3. MIRROR_TEI_SCORE: |TEI - mean| / IQR
-        tei_stats = po_stats.get('tei', stats.get('tei', {}))
-        tei_mean = tei_stats.get('mean', 14.5)
-        tei_q25 = tei_stats.get('q25', 10.5)
-        tei_q75 = tei_stats.get('q75', 18.5)
-        iqr_tei = tei_q75 - tei_q25
-        if iqr_tei > 0 and valeur_caf > 0:
-            scores['MIRROR_TEI_SCORE'] = abs(scores['TEI_CALCULE'] - tei_mean) / iqr_tei
-            scores['MIRROR_TEI_DEVIATION'] = abs(scores['TEI_CALCULE'] - tei_mean)
-        else:
-            scores['MIRROR_TEI_SCORE'] = 0.0
-            scores['MIRROR_TEI_DEVIATION'] = 0.0
-        
-        # 4. ADMIN_VALUES_SCORE: |X - median| / IQR
-        admin_median = valeur_caf_stats.get('median', mean_caf)
-        admin_q25 = valeur_caf_stats.get('q25', mean_caf * 0.7)
-        admin_q75 = valeur_caf_stats.get('q75', mean_caf * 1.3)
-        iqr_admin = admin_q75 - admin_q25
-        if iqr_admin > 0:
-            scores['ADMIN_VALUES_SCORE'] = abs(valeur_caf - admin_median) / iqr_admin
-            scores['ADMIN_VALUES_DEVIATION'] = abs(valeur_caf - admin_median) / admin_median if admin_median > 0 else 0.0
-        else:
-            scores['ADMIN_VALUES_SCORE'] = 0.0
-            scores['ADMIN_VALUES_DEVIATION'] = 0.0
-        
-        # 5. SPECTRAL_CLUSTER_SCORE et HIERARCHICAL_CLUSTER_SCORE: 0 (nécessitent batch)
-        scores['SPECTRAL_CLUSTER_SCORE'] = 0.0
-        scores['HIERARCHICAL_CLUSTER_SCORE'] = 0.0
-        
-        # 6. COMPOSITE_FRAUD_SCORE: moyenne des scores disponibles
-        available_scores = [
-            scores['BIENAYME_CHEBYCHEV_SCORE'],
-            scores['MIRROR_TEI_SCORE'],
-            scores['ADMIN_VALUES_SCORE']
-        ]
-        non_zero = [s for s in available_scores if s > 0]
-        scores['COMPOSITE_FRAUD_SCORE'] = sum(non_zero) / len(non_zero) if non_zero else 0.0
-        
-        # 7. RATIO_POIDS_VALEUR
-        poids_net_kg = context.get('POIDS_NET_KG', 0)
-        if valeur_caf > 0 and poids_net_kg > 0:
-            scores['RATIO_POIDS_VALEUR'] = poids_net_kg / valeur_caf
-        else:
-            scores['RATIO_POIDS_VALEUR'] = 0.0
-        
-        # Afficher les scores non-zéro
-        non_zero_scores = {k: v for k, v in scores.items() if v != 0.0 and k != 'RATIO_POIDS_VALEUR'}
-        if non_zero_scores:
-            logger.info(f"✅ Fraud features calculées pour {chapter} (stats: {len(product_origin_stats)} couples)")
-            for feature, value in list(non_zero_scores.items())[:3]:  # Top 3 scores
-                logger.info(f"   {feature}: {value:.3f}")
-        
-        return scores
-        
-    except Exception as e:
-        logger.warning(f"⚠️ Erreur calcul fraud features: {e}")
-        return _get_default_fraud_scores()
-
-def _get_default_fraud_scores() -> Dict[str, float]:
-    """Retourner des scores par défaut si erreur"""
-    return {
-        'BIENAYME_CHEBYCHEV_SCORE': 0.0,
-        'TEI_CALCULE': 0.0,
-        'MIRROR_TEI_SCORE': 0.0,
-        'MIRROR_TEI_DEVIATION': 0.0,
-        'SPECTRAL_CLUSTER_SCORE': 0.0,
-        'HIERARCHICAL_CLUSTER_SCORE': 0.0,
-        'ADMIN_VALUES_SCORE': 0.0,
-        'ADMIN_VALUES_DEVIATION': 0.0,
-        'COMPOSITE_FRAUD_SCORE': 0.0,
-        'RATIO_POIDS_VALEUR': 0.0,
-    }
+# ✅ FONCTIONS DÉPLACÉES VERS OCR_PIPELINE
+# Les fonctions suivantes ont été déplacées vers ocr_pipeline.py pour séparer les responsabilités :
+# - _create_chapter_specific_business_features : Calcul des business features → OCR_PIPELINE
+# - _create_advanced_fraud_scores : Calcul des fraud scores → OCR_PIPELINE  
+# - _get_default_fraud_scores : Scores par défaut → OCR_PIPELINE
+#
+# OCR_INGEST se limite maintenant à :
+# - Extraction et mapping des données depuis fichiers (PDF, CSV, images)
+# - Création du contexte de base (features numériques et string de base, ratios simples)
+#
+# OCR_PIPELINE gère :
+# - Ajout des business features au contexte de base
+# - Calcul des fraud scores avancés
+# - Prédictions ML-RL
 
 def process_declaration_file(file_path: str, chapter: str = None) -> Dict[str, Any]:
     """

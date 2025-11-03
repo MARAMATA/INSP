@@ -1,7 +1,7 @@
 # backend/api/routes_predict.py
 from fastapi import APIRouter, UploadFile, File, Form, Body, HTTPException, Query, Depends
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 from pathlib import Path
 import tempfile, shutil
 import json
@@ -11,6 +11,10 @@ import psycopg2
 import uuid
 import logging
 from datetime import datetime
+import asyncio
+
+# ✅ CORRECTION: Définir logger AVANT les fonctions qui l'utilisent
+logger = logging.getLogger(__name__)
 
 def _get_valid_declaration_id(data: Dict[str, Any]) -> str:
     """
@@ -48,6 +52,8 @@ from src.shared.ocr_pipeline import (
     AdvancedOCRPipeline,
     run_auto_predict,
     process_ocr_document,
+    _create_chapter_specific_business_features,
+    _create_advanced_fraud_scores,
     predict_fraud_from_ocr_data,
     get_chapter_config,
     list_available_chapters,
@@ -57,7 +63,6 @@ from src.shared.ocr_pipeline import (
     process_file_with_ml_prediction,
     process_multiple_declarations_with_advanced_fraud_detection,
     get_advanced_features_summary,
-    calculate_business_features,
     analyze_fraud_risk_patterns,
     load_ml_model,
     load_rl_manager,
@@ -78,8 +83,6 @@ from src.shared.ocr_ingest import (
     OCRDataContract,
     apply_field_mapping,
     create_advanced_context_from_ocr_data,
-    _create_chapter_specific_business_features,
-    _create_advanced_fraud_scores,
     ingest,
     extract_fields_from_text,
     clean_field_value
@@ -98,7 +101,7 @@ ml_router = APIRouter(prefix="/ml", tags=["ML Dashboard"])
 
 # Configuration PostgreSQL
 DATABASE_URL = "postgresql://maramata:maramata@localhost:5432/INSPECT_IA"
-logger = logging.getLogger(__name__)
+# logger déjà défini plus haut
 
 # Connexion PostgreSQL globale
 import asyncpg
@@ -226,7 +229,9 @@ async def save_declaration_to_postgresql(declaration_id: str, chapter_id: str, d
             updated_at = CURRENT_TIMESTAMP
         """
         
-        execute_postgresql_query(query, declaration_data, fetch=False)
+        # ✅ CORRECTION: Exécuter la requête sync dans un thread séparé pour ne pas bloquer l'event loop
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, lambda: execute_postgresql_query(query, declaration_data, False))
         logger.info(f"✅ Déclaration {declaration_id} sauvegardée en PostgreSQL")
         
     except Exception as e:
@@ -261,7 +266,6 @@ async def save_prediction_to_postgresql(declaration_id: str, chapter_id: str, pr
         # Sauvegarder avec execute_postgresql_query (supprimer les anciennes prédictions puis insérer)
         # D'abord supprimer les prédictions existantes pour cette déclaration
         delete_query = "DELETE FROM predictions WHERE declaration_id = %(declaration_id)s"
-        execute_postgresql_query(delete_query, {"declaration_id": declaration_id}, fetch=False)
         
         # Puis insérer la nouvelle prédiction
         query = """
@@ -276,7 +280,10 @@ async def save_prediction_to_postgresql(declaration_id: str, chapter_id: str, pr
         )
         """
         
-        execute_postgresql_query(query, prediction_data_dict, fetch=False)
+        # ✅ CORRECTION: Exécuter les requêtes sync dans un thread séparé pour ne pas bloquer l'event loop
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, lambda: execute_postgresql_query(delete_query, {"declaration_id": declaration_id}, False))
+        await loop.run_in_executor(None, lambda: execute_postgresql_query(query, prediction_data_dict, False))
         
         logger.info(f"✅ Prédiction {declaration_id} sauvegardée en PostgreSQL via InspectIADatabase")
         
@@ -2278,35 +2285,92 @@ async def get_declarations(
     offset: int = 0,
     sort: str = "date_desc"
 ):
-    """Récupère la liste des déclarations avec filtres optionnels"""
+    """Récupère la liste des déclarations avec filtres optionnels ET leurs prédictions"""
     try:
-        # Construire la requête SQL
+        # Construire la requête SQL avec LEFT JOIN LATERAL pour récupérer la dernière prédiction
         if chapter:
             query = """
-                SELECT declaration_id, chapter_id, file_name, file_type, source_type,
-                       poids_net_kg, valeur_caf, code_sh_complet, pays_origine_str,
-                       pays_provenance_str, extraction_status, validation_status,
-                       created_at, updated_at
-                FROM declarations 
-                WHERE chapter_id = %s
-                ORDER BY created_at DESC
+                SELECT 
+                    d.declaration_id, 
+                    d.chapter_id, 
+                    d.file_name, 
+                    d.file_type, 
+                    d.source_type,
+                    d.poids_net_kg, 
+                    d.valeur_caf, 
+                    d.code_sh_complet, 
+                    d.pays_origine_str,
+                    d.pays_provenance_str, 
+                    d.extraction_status, 
+                    d.validation_status,
+                    d.created_at, 
+                    d.updated_at,
+                    p.predicted_fraud,
+                    p.fraud_probability,
+                    p.decision,
+                    p.confidence_score,
+                    p.created_at as prediction_created_at
+                FROM declarations d
+                LEFT JOIN LATERAL (
+                    SELECT 
+                        predicted_fraud,
+                        fraud_probability,
+                        decision,
+                        confidence_score,
+                        created_at
+                    FROM predictions
+                    WHERE declaration_id = d.declaration_id
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                ) p ON true
+                WHERE d.chapter_id = %s
+                ORDER BY d.created_at DESC
                 LIMIT %s
             """
             params = [chapter, limit]
         else:
             query = """
-                SELECT declaration_id, chapter_id, file_name, file_type, source_type,
-                       poids_net_kg, valeur_caf, code_sh_complet, pays_origine_str,
-                       pays_provenance_str, extraction_status, validation_status,
-                       created_at, updated_at
-                FROM declarations 
-                ORDER BY created_at DESC
+                SELECT 
+                    d.declaration_id, 
+                    d.chapter_id, 
+                    d.file_name, 
+                    d.file_type, 
+                    d.source_type,
+                    d.poids_net_kg, 
+                    d.valeur_caf, 
+                    d.code_sh_complet, 
+                    d.pays_origine_str,
+                    d.pays_provenance_str, 
+                    d.extraction_status, 
+                    d.validation_status,
+                    d.created_at, 
+                    d.updated_at,
+                    p.predicted_fraud,
+                    p.fraud_probability,
+                    p.decision,
+                    p.confidence_score,
+                    p.created_at as prediction_created_at
+                FROM declarations d
+                LEFT JOIN LATERAL (
+                    SELECT 
+                        predicted_fraud,
+                        fraud_probability,
+                        decision,
+                        confidence_score,
+                        created_at
+                    FROM predictions
+                    WHERE declaration_id = d.declaration_id
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                ) p ON true
+                ORDER BY d.created_at DESC
                 LIMIT %s
             """
             params = [limit]
         
-        # Exécuter la requête
-        declarations = execute_postgresql_query(query, params)
+        # ✅ CORRECTION: Exécuter la requête sync dans un thread séparé pour ne pas bloquer l'event loop
+        loop = asyncio.get_event_loop()
+        declarations = await loop.run_in_executor(None, lambda: execute_postgresql_query(query, tuple(params) if params else None, True))
         
         # Convertir en format JSON
         declarations_data = []
@@ -2326,6 +2390,12 @@ async def get_declarations(
                 "validation_status": decl.get("validation_status"),
                 "created_at": decl.get("created_at").isoformat() if decl.get("created_at") else None,
                 "updated_at": decl.get("updated_at").isoformat() if decl.get("updated_at") else None,
+                # Ajouter les données de prédiction
+                "predicted_fraud": decl.get("predicted_fraud", False) if decl.get("predicted_fraud") is not None else False,
+                "fraud_probability": float(decl.get("fraud_probability", 0.0)) if decl.get("fraud_probability") is not None else 0.0,
+                "decision": decl.get("decision", "conforme") if decl.get("decision") else "conforme",
+                "confidence_score": float(decl.get("confidence_score", 0.0)) if decl.get("confidence_score") is not None else 0.0,
+                "prediction_created_at": decl.get("prediction_created_at").isoformat() if decl.get("prediction_created_at") else None,
             })
         
         return {
@@ -2349,7 +2419,9 @@ async def get_declaration_details(declaration_id: str = Query(...)):
         SELECT * FROM declarations 
         WHERE declaration_id = %s
         """
-        results = execute_postgresql_query(query, [declaration_id])
+        # ✅ CORRECTION: Exécuter la requête sync dans un thread séparé pour ne pas bloquer l'event loop
+        loop = asyncio.get_event_loop()
+        results = await loop.run_in_executor(None, lambda: execute_postgresql_query(query, (declaration_id,), True))
         
         if not results or len(results) == 0:
             raise HTTPException(status_code=404, detail="Déclaration non trouvée")
@@ -2407,7 +2479,8 @@ async def get_declaration_details(declaration_id: str = Query(...)):
         ORDER BY created_at DESC
         LIMIT 1
         """
-        prediction_results = execute_postgresql_query(prediction_query, [declaration_id])
+        # ✅ CORRECTION: Exécuter la requête sync dans un thread séparé pour ne pas bloquer l'event loop
+        prediction_results = await loop.run_in_executor(None, lambda: execute_postgresql_query(prediction_query, (declaration_id,), True))
         
         prediction_data = {}
         if prediction_results and len(prediction_results) > 0:
@@ -2549,8 +2622,17 @@ async def postgresql_upload_declaration(
                     pred_result = pipeline.predict_fraud(decl_data, chapter_id, 'expert')
                     fraud_prob = pred_result.get("fraud_probability", 0.0)
                     
+                    # Log pour debug
+                    logger.info(f"🔍 PRÉDICTION pour {_get_valid_declaration_id(decl_data)}: probabilité={fraud_prob:.4f}, résultat complet: {pred_result.keys()}")
+                    
+                    # Vérifier que la probabilité est valide
+                    if fraud_prob is None or fraud_prob < 0 or fraud_prob > 1:
+                        logger.warning(f"⚠️ Probabilité invalide pour {_get_valid_declaration_id(decl_data)}: {fraud_prob}. Utilisation de 0.0")
+                        fraud_prob = 0.0
+                    
                     # Utiliser la fonction centralisée de décision de l'OCR pipeline
                     decision = determine_decision(fraud_prob, chapter_id)
+                    logger.info(f"✅ DÉCISION pour {_get_valid_declaration_id(decl_data)}: {decision} (probabilité: {fraud_prob:.4f}, seuil optimal: {load_decision_thresholds(chapter_id).get('optimal_threshold', 0.5):.3f})")
                     
                     is_fraud = decision == "fraude"
                     
@@ -2642,7 +2724,8 @@ async def postgresql_upload_declaration(
                             file.filename
                         )
                         
-                        # Sauvegarder la prédiction
+                        # Sauvegarder la prédiction - LOG pour vérifier les valeurs
+                        logger.info(f"💾 SAUVEGARDE CSV - {declaration_id}: probabilité={pred['fraud_probability']:.4f}, décision={pred['decision']}, predicted_fraud={pred['predicted_fraud']}")
                         prediction_data = {
                             "fraud_probability": pred["fraud_probability"],
                             "decision": pred["decision"],
@@ -2673,18 +2756,19 @@ async def postgresql_upload_declaration(
                         file.filename
                     )
                     
-                    # Sauvegarder la prédiction
+                    # Sauvegarder la prédiction - UTILISER LES VRAIES VALEURS DE prediction_result
                     prediction_data = {
                         "fraud_probability": prediction_result.get("fraud_probability", 0.0),
-                        "decision": "fraude" if prediction_result.get("predicted_fraud", False) else "conforme",
+                        "decision": prediction_result.get("decision", "conforme"),  # Utiliser la vraie décision
                         "predicted_fraud": prediction_result.get("predicted_fraud", False),
                         "confidence_score": prediction_result.get("confidence_score", 0.0),
                         "context": clean_data_for_json(prediction_result.get("context", {})),
                         "risk_analysis": prediction_result.get("risk_analysis", {}),
                         "feature_importance": prediction_result.get("feature_importance", {}),
                         "model_version": "1.0",
-                        "threshold_used": load_decision_thresholds(chapter_id).get("optimal_threshold", 0.2)
+                        "threshold_used": prediction_result.get("optimal_threshold_used", load_decision_thresholds(chapter_id).get("optimal_threshold", 0.2))
                     }
+                    logger.info(f"💾 SAUVEGARDE prédiction {declaration_id}: probabilité={prediction_data['fraud_probability']:.4f}, décision={prediction_data['decision']}")
                     await save_prediction_to_postgresql(
                         declaration_id, 
                         chapter_id, 
@@ -3462,7 +3546,7 @@ async def get_recent_predictions_from_db() -> Dict[str, Any]:
     Utilise les données des PVs existants car les tables predictions/declarations sont vides
     """
     try:
-        # Utiliser les données des PVs existants au lieu des tables vides
+        # ✅ CORRECTION: Utiliser le bon nom de table (pv_inspection au lieu de pvs)
         query = """
         SELECT 
             pv_id,
@@ -3473,7 +3557,7 @@ async def get_recent_predictions_from_db() -> Dict[str, Any]:
             nombre_fraudes_detectees,
             score_risque_global,
             taux_fraude
-        FROM pvs
+        FROM pv_inspection
         ORDER BY date_generation DESC
         LIMIT 20;
         """
@@ -3533,7 +3617,7 @@ async def get_global_statistics_from_db() -> Dict[str, Any]:
     Utilise les données des PVs existants car les tables predictions/declarations sont vides
     """
     try:
-        # Utiliser les données des PVs existants au lieu des tables vides
+        # ✅ CORRECTION: Utiliser le bon nom de table (pv_inspection au lieu de pvs)
         query = """
         SELECT 
             COUNT(*) as total_pvs,
@@ -3542,7 +3626,7 @@ async def get_global_statistics_from_db() -> Dict[str, Any]:
             AVG(taux_fraude) as avg_fraud_rate,
             AVG(score_risque_global) as avg_risk_score,
             SUM(nombre_declarations_analysees * 1000000) as estimated_revenue
-        FROM pvs
+        FROM pv_inspection
         WHERE date_generation >= CURRENT_DATE - INTERVAL '30 days';
         """
         
@@ -4378,12 +4462,12 @@ async def get_advanced_features_summary_endpoint(chapter: str):
 
 @router.post("/{chapter}/business-features-calculation")
 async def calculate_business_features_endpoint(chapter: str, context: Dict[str, Any] = Body(...)):
-    """Utilise calculate_business_features pour calculer les features business"""
+    """Utilise _create_chapter_specific_business_features pour calculer les features business"""
     _validate_chapter(chapter)
     
     try:
         # Utiliser la fonction du pipeline OCR
-        business_features = calculate_business_features(context, chapter)
+        business_features = _create_chapter_specific_business_features(context, chapter)
         
         return {
             "status": "success",
