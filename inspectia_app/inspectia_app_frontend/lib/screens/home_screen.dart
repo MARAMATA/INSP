@@ -140,128 +140,133 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: _buildActionCards(context),
               ),
 
-              SizedBox(height: AppSizes.paddingLarge),
+              // ✅ Sections "Statistiques Temps Réel" et "Accès Rapide" supprimées pour l'inspecteur
+              // Ces sections sont affichées uniquement pour les autres rôles (Expert ML, Chef de Service)
+              if (UserSessionService.currentUser?.role !=
+                  UserRole.inspecteur) ...[
+                SizedBox(height: AppSizes.paddingLarge),
 
-              // Statistiques
-              Container(
-                padding: EdgeInsets.all(AppSizes.paddingMedium),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
-                  border: Border.all(color: AppColors.borderLight),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 4,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
+                // Statistiques
+                Container(
+                  padding: EdgeInsets.all(AppSizes.paddingMedium),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(AppSizes.radiusMedium),
+                    border: Border.all(color: AppColors.borderLight),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.analytics,
+                            color: AppColors.primaryGreen,
+                            size: 20,
+                          ),
+                          SizedBox(width: AppSizes.paddingSmall),
+                          Text(
+                            'Statistiques Temps Réel',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textDark,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: AppSizes.paddingSmall),
+
+                      // Données temps réel
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.category,
+                            color: AppColors.primaryGreen,
+                            size: 16,
+                          ),
+                          SizedBox(width: AppSizes.paddingSmall),
+                          Text(
+                            'Chapitre actuel: Sélectionnez un chapitre',
+                            style: TextStyle(
+                              color: AppColors.textDark,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+
+                SizedBox(height: AppSizes.paddingLarge),
+
+                // Accès rapide
+                Text(
+                  'Accès Rapide',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textDark,
+                  ),
+                ),
+                SizedBox(height: AppSizes.paddingMedium),
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.analytics,
-                          color: AppColors.primaryGreen,
-                          size: 20,
-                        ),
-                        SizedBox(width: AppSizes.paddingSmall),
-                        Text(
-                          'Statistiques Temps Réel',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textDark,
-                          ),
-                        ),
-                      ],
+                    Expanded(
+                      child: _buildQuickAccessCard(
+                        context,
+                        'Analyse de Fichiers',
+                        Icons.upload_file,
+                        AppColors.primaryGreen,
+                        '/upload',
+                      ),
                     ),
-                    SizedBox(height: AppSizes.paddingSmall),
-
-                    // Données temps réel
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.category,
-                          color: AppColors.primaryGreen,
-                          size: 16,
-                        ),
-                        SizedBox(width: AppSizes.paddingSmall),
-                        Text(
-                          'Chapitre actuel: Sélectionnez un chapitre',
-                          style: TextStyle(
-                            color: AppColors.textDark,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
+                    SizedBox(width: AppSizes.paddingMedium),
+                    Expanded(
+                      child: _buildQuickAccessCard(
+                        context,
+                        'Performances RL',
+                        Icons.psychology,
+                        AppColors.discreetRed,
+                        '/rl-performance',
+                      ),
                     ),
                   ],
                 ),
-              ),
-
-              SizedBox(height: AppSizes.paddingLarge),
-
-              // Accès rapide
-              Text(
-                'Accès Rapide',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textDark,
+                SizedBox(height: AppSizes.paddingMedium),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildQuickAccessCard(
+                        context,
+                        'Analytics RL',
+                        Icons.analytics,
+                        AppColors.successGreen,
+                        '/rl-analytics',
+                      ),
+                    ),
+                    SizedBox(width: AppSizes.paddingMedium),
+                    Expanded(
+                      child: _buildQuickAccessCard(
+                        context,
+                        'Dashboard Chef',
+                        Icons.dashboard,
+                        AppColors.warningOrange,
+                        '/dashboard',
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              SizedBox(height: AppSizes.paddingMedium),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildQuickAccessCard(
-                      context,
-                      'Analyse de Fichiers',
-                      Icons.upload_file,
-                      AppColors.primaryGreen,
-                      '/upload',
-                    ),
-                  ),
-                  SizedBox(width: AppSizes.paddingMedium),
-                  Expanded(
-                    child: _buildQuickAccessCard(
-                      context,
-                      'Performances RL',
-                      Icons.psychology,
-                      AppColors.discreetRed,
-                      '/rl-performance',
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: AppSizes.paddingMedium),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildQuickAccessCard(
-                      context,
-                      'Analytics RL',
-                      Icons.analytics,
-                      AppColors.successGreen,
-                      '/rl-analytics',
-                    ),
-                  ),
-                  SizedBox(width: AppSizes.paddingMedium),
-                  Expanded(
-                    child: _buildQuickAccessCard(
-                      context,
-                      'Dashboard Chef',
-                      Icons.dashboard,
-                      AppColors.warningOrange,
-                      '/dashboard',
-                    ),
-                  ),
-                ],
-              ),
+              ],
             ],
           ),
         ),

@@ -190,3 +190,4 @@ lcov.info
 # Lock files
 package-lock.json
 yarn.lock
+INSPECT_IA_PROJECT_COMPLETE.zip

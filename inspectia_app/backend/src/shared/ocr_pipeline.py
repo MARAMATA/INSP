@@ -42,6 +42,14 @@ import json
 import sys
 import os
 
+# Import SHAP pour l'explication des prédictions
+try:
+    import shap
+    SHAP_AVAILABLE = True
+except ImportError:
+    SHAP_AVAILABLE = False
+    shap = None
+
 def stable_hash_float(value: str, mod: int = 1000) -> float:
     """Hash stable et déterministe pour l'encodage des features catégorielles"""
     if value is None:
@@ -978,14 +986,10 @@ def analyze_fraud_risk_patterns(context: Dict[str, Any], chapter: str) -> Dict[s
 
 def load_ml_model(chapter: str) -> Optional[Any]:
     """Charger le meilleur modèle ML calibré pour un chapitre avec scalers et encoders"""
-    # FORCER LE RECHARGEMENT POUR TOUS LES CHAPITRES
+    # ✅ OPTIMISÉ: Utiliser le cache pour éviter de recharger le modèle à chaque prédiction
     with _CACHE_LOCK:
         if chapter in _MODEL_CACHE:
-            del _MODEL_CACHE[chapter]
-            logger.info(f"Cache vidé pour {chapter} - rechargement forcé")
-    
-    with _CACHE_LOCK:
-        if chapter in _MODEL_CACHE:
+            logger.debug(f"✅ Modèle {chapter} récupéré du cache (rapide)")
             return _MODEL_CACHE[chapter]
     
     try:
@@ -1134,7 +1138,7 @@ class AdvancedOCRPipeline:
         
     # MÉTHODES SUPPRIMÉES - Utiliser process_image_declaration depuis OCR_INGEST
     # Ces méthodes étaient redondantes avec celles d'OCR_INGEST
-    def predict_fraud(self, ocr_data: Dict[str, Any], chapter: str = None, level: str = "basic") -> Dict[str, Any]:
+    def predict_fraud(self, ocr_data: Dict[str, Any], chapter: str = None, level: str = "basic", calculate_shap: bool = False) -> Dict[str, Any]:
         """Prédire la fraude avec le système ML-RL intégré"""
         try:
             # Déterminer le chapitre si non fourni
@@ -1287,6 +1291,31 @@ class AdvancedOCRPipeline:
                             ml_probability = float(pipeline.predict_proba(df_clean)[0][1])
                             self.logger.info(f"✅ Prédiction ML RÉELLE réussie: {ml_probability:.3f}")
                             self.logger.info(f"✅ Modèle utilisé: {ml_model_data.get('best_model', 'Inconnu')}")
+                            
+                            # ✅ OPTIMISÉ: Calculer SHAP SEULEMENT si explicitement demandé (calculate_shap=True)
+                            # Par défaut, on ne calcule PAS SHAP lors des batch uploads pour éviter la lenteur
+                            # SHAP sera calculé à la demande lors de la consultation des détails d'une déclaration frauduleuse
+                            shap_values_dict = {}
+                            
+                            if calculate_shap and SHAP_AVAILABLE and ml_model_data:
+                                threshold = load_decision_thresholds(chapter).get('optimal_threshold', 0.5)
+                                is_fraud_or_high_risk = ml_probability > threshold or ml_probability > 0.3
+                                
+                                if is_fraud_or_high_risk:
+                                    try:
+                                        self.logger.info(f"🔄 Calcul SHAP demandé pour déclaration à risque (prob: {ml_probability:.3f})...")
+                                        shap_values_dict = self._calculate_shap_for_prediction(
+                                            pipeline, df_clean, chapter
+                                        )
+                                        self.logger.info(f"✅ SHAP calculé: {len(shap_values_dict)} features")
+                                    except Exception as shap_error:
+                                        # Ne pas bloquer la prédiction si SHAP échoue
+                                        self.logger.warning(f"⚠️ Erreur calcul SHAP (non bloquante): {shap_error}")
+                                        shap_values_dict = {}
+                            
+                            # Stocker les valeurs SHAP dans le contexte pour inclusion dans le résultat
+                            if shap_values_dict:
+                                context['_shap_values'] = shap_values_dict
                         except Exception as e:
                             self.logger.error(f"❌ ERREUR CRITIQUE: Le modèle ML n'a pas pu prédire: {e}")
                             self.logger.error(f"❌ Détails: {str(e)}")
@@ -1316,6 +1345,9 @@ class AdvancedOCRPipeline:
             
             # Analyser les patterns de risque de fraude
             risk_analysis = analyze_fraud_risk_patterns(context, chapter)
+            
+            # ✅ NOUVEAU: Extraire les valeurs SHAP du contexte si calculées
+            shap_values = context.get('_shap_values', {})
             
             # Enrichir le résultat avec les analyses poussées
             # Pas de calibration pour les nouveaux modèles ML avancés
@@ -1350,6 +1382,8 @@ class AdvancedOCRPipeline:
                 # Analyses poussées
                 "risk_analysis": risk_analysis,
                 "context": context,  # Inclure le contexte complet
+                # ✅ NOUVEAU: Valeurs SHAP pour expliquer la prédiction
+                "shap_values": shap_values,  # Dict {feature_name: shap_score}
                 # Métriques de performance (sans calibration)
                 "performance_metrics": {
                     "validation_status": "ROBUST",
@@ -1421,6 +1455,200 @@ class AdvancedOCRPipeline:
                 "error": str(e),
                 "image_path": image_path
             }
+    
+    def _calculate_shap_for_prediction(self, pipeline, df: pd.DataFrame, chapter: str) -> Dict[str, float]:
+        """
+        Calcule les valeurs SHAP pour une prédiction individuelle
+        
+        Args:
+            pipeline: Pipeline scikit-learn avec preprocessing et modèle
+            df: DataFrame avec les features pour cette déclaration
+            chapter: Chapitre pour identifier le modèle
+            
+        Returns:
+            Dict avec {feature_name: shap_value} pour les top features
+        """
+        if not SHAP_AVAILABLE:
+            return {}
+        
+        try:
+            # Extraire le classifier du pipeline (après preprocessing)
+            if hasattr(pipeline, 'named_steps') and 'classifier' in pipeline.named_steps:
+                classifier = pipeline.named_steps['classifier']
+            elif hasattr(pipeline, 'steps') and len(pipeline.steps) > 0:
+                # Dernier step est le classifier
+                classifier = pipeline.steps[-1][1]
+            else:
+                self.logger.warning("⚠️ Impossible d'extraire le classifier du pipeline")
+                return {}
+            
+            # Transformer les données avec le preprocessor
+            if hasattr(pipeline, 'named_steps') and 'preprocessor' in pipeline.named_steps:
+                preprocessor = pipeline.named_steps['preprocessor']
+                df_processed = preprocessor.transform(df)
+                
+                # Obtenir les noms des features après preprocessing (utiliser la même logique que _get_feature_names_after_preprocessing)
+                try:
+                    # Vérifier si le preprocessor a get_feature_names_out (méthode directe)
+                    if hasattr(preprocessor, 'get_feature_names_out'):
+                        try:
+                            feature_names = preprocessor.get_feature_names_out(df.columns)
+                            self.logger.info(f"✅ Feature names obtenues via get_feature_names_out: {len(feature_names)}")
+                        except Exception as e:
+                            self.logger.warning(f"⚠️ Erreur avec get_feature_names_out: {e}")
+                            # Utiliser la méthode manuelle
+                            raise
+                    else:
+                        raise AttributeError("Pas de get_feature_names_out direct")
+                        
+                except:
+                    # Méthode manuelle (utiliser preprocessor.transformers_ pour obtenir l'ordre exact)
+                    try:
+                        if hasattr(preprocessor, 'transformers_'):
+                            # Extraire les features dans l'ordre exact utilisé lors de l'entraînement
+                            numeric_features = []
+                            categorical_features_original = []
+                            
+                            # Parcourir transformers_ pour obtenir l'ordre exact (sans filtrage - utiliser l'ordre d'entraînement)
+                            for name, transformer, columns in preprocessor.transformers_:
+                                if name == 'num':
+                                    # Features numériques dans l'ordre exact d'entraînement (sans filtrage)
+                                    numeric_features = list(columns) if isinstance(columns, list) else list(columns)
+                                elif name == 'cat':
+                                    # Features catégorielles dans l'ordre exact d'entraînement (sans filtrage)
+                                    categorical_features_original = list(columns) if isinstance(columns, list) else list(columns)
+                            
+                            self.logger.info(f"🔍 Features depuis transformers_: {len(numeric_features)} num, {len(categorical_features_original)} cat (ordre d'entraînement)")
+                            
+                            # Obtenir les noms des features catégorielles après OneHotEncoder
+                            # Utiliser feature_names_in_ si disponible (ordre exact d'entraînement)
+                            if 'cat' in preprocessor.named_transformers_:
+                                categorical_transformer = preprocessor.named_transformers_['cat']
+                                if hasattr(categorical_transformer, 'named_steps') and 'onehot' in categorical_transformer.named_steps:
+                                    onehot = categorical_transformer.named_steps['onehot']
+                                    
+                                    # ✅ CORRECTION: Utiliser feature_names_in_ pour obtenir l'ordre exact d'entraînement
+                                    if hasattr(onehot, 'feature_names_in_'):
+                                        # Les features dans l'ordre exact utilisé lors de l'entraînement
+                                        cat_features_trained = onehot.feature_names_in_
+                                        self.logger.info(f"🔍 Features catégorielles d'entraînement (feature_names_in_): {len(cat_features_trained)} features")
+                                        
+                                        if hasattr(onehot, 'get_feature_names_out'):
+                                            try:
+                                                # Utiliser feature_names_in_ au lieu de categorical_features
+                                                cat_feature_names = onehot.get_feature_names_out()
+                                                categorical_features_processed = list(cat_feature_names)
+                                                self.logger.info(f"✅ Features catégorielles après OneHot (depuis feature_names_in_): {len(categorical_features_processed)}")
+                                            except Exception as e:
+                                                self.logger.warning(f"⚠️ Erreur get_feature_names_out: {e}")
+                                                # Fallback: utiliser feature_names_in_ directement
+                                                categorical_features_processed = list(cat_features_trained) if hasattr(cat_features_trained, '__iter__') else []
+                                    elif hasattr(onehot, 'get_feature_names_out'):
+                                        try:
+                                            # Fallback: utiliser les features depuis transformers_
+                                            cat_feature_names = onehot.get_feature_names_out(categorical_features_original)
+                                            categorical_features_processed = list(cat_feature_names)
+                                            self.logger.info(f"✅ Features catégorielles après OneHot (fallback): {len(categorical_features_processed)}")
+                                        except Exception as e:
+                                            self.logger.warning(f"⚠️ Erreur get_feature_names_out OneHot: {e}")
+                                            categorical_features_processed = []
+                                    else:
+                                        categorical_features_processed = []
+                                else:
+                                    categorical_features_processed = []
+                            else:
+                                categorical_features_processed = []
+                            
+                            # Utiliser les features catégorielles originales si pas de processed
+                            if not categorical_features_processed:
+                                # Si on n'a pas réussi à obtenir les noms encodés, utiliser les features originales
+                                categorical_features_processed = categorical_features_original if 'categorical_features_original' in locals() else []
+                            
+                            # Combiner dans l'ordre: numériques d'abord, puis catégorielles encodées
+                            feature_names = numeric_features + categorical_features_processed
+                            self.logger.info(f"✅ Feature names extraites: {len(numeric_features)} num + {len(categorical_features_processed)} cat = {len(feature_names)} total")
+                            
+                            # Afficher quelques exemples
+                            if feature_names:
+                                self.logger.info(f"   Exemples features: {feature_names[:5]}...")
+                        elif hasattr(preprocessor, 'named_transformers_'):
+                            # Fallback: utiliser named_transformers_ si transformers_ n'existe pas
+                            raise AttributeError("transformers_ non disponible")
+                        else:
+                            raise AttributeError("Pas de transformers_ ni named_transformers_")
+                    
+                    except Exception as e:
+                        self.logger.warning(f"⚠️ Erreur extraction feature names manuelle: {e}. Utilisation d'indices.")
+                        feature_names = [f"feature_{i}" for i in range(df_processed.shape[1])]
+                
+                # Vérifier que le nombre de features correspond
+                if len(feature_names) != df_processed.shape[1]:
+                    self.logger.warning(f"⚠️ Nombre de features ({len(feature_names)}) ne correspond pas au nombre attendu ({df_processed.shape[1]}). Utilisation d'indices.")
+                    feature_names = [f"feature_{i}" for i in range(df_processed.shape[1])]
+            else:
+                # Pas de preprocessor séparé, utiliser directement
+                df_processed = df.values
+                feature_names = list(df.columns)
+            
+            # Créer l'explainer SHAP selon le type de modèle
+            if hasattr(classifier, 'tree_') or any(x in str(type(classifier)).lower() for x in ['tree', 'xgboost', 'lightgbm', 'catboost', 'randomforest']):
+                # Modèle tree-based (XGBoost, LightGBM, CatBoost, RandomForest)
+                # ✅ OPTIMISÉ: Utiliser feature_perturbation="tree_path_dependent" pour plus de rapidité
+                # Cela évite de recalculer les moyennes de toutes les features
+                explainer = shap.TreeExplainer(classifier, feature_perturbation="tree_path_dependent")
+                # Pour TreeExplainer, utiliser directement les données transformées
+                # ✅ OPTIMISÉ: Ne calculer que pour la classe frauduleuse (classe 1) si binaire
+                shap_values_array = explainer.shap_values(df_processed)
+                # Si c'est un tableau multi-classe, prendre seulement la classe 1 (frauduleuse)
+                if isinstance(shap_values_array, list) and len(shap_values_array) > 1:
+                    shap_values_array = shap_values_array[1]  # Classe frauduleuse
+                elif isinstance(shap_values_array, list) and len(shap_values_array) == 1:
+                    shap_values_array = shap_values_array[0]
+            else:
+                # Modèle linéaire ou autre - utiliser LinearExplainer si possible
+                try:
+                    explainer = shap.LinearExplainer(classifier, df_processed)
+                    shap_values_array = explainer.shap_values(df_processed)
+                except:
+                    # Fallback: utiliser KernelExplainer (plus lent)
+                    self.logger.warning("⚠️ Utilisation de KernelExplainer (plus lent)")
+                    # Utiliser un échantillon de background data (même données pour simplifier)
+                    explainer = shap.KernelExplainer(classifier.predict_proba, df_processed)
+                    shap_values_array = explainer.shap_values(df_processed)
+            
+            # Gérer le cas binaire (liste de arrays)
+            if isinstance(shap_values_array, list):
+                # Prendre les valeurs pour la classe positive (fraude)
+                shap_values_array = shap_values_array[1]
+            
+            # Extraire les valeurs pour cette déclaration (première et seule ligne)
+            if len(shap_values_array.shape) > 1:
+                shap_values_single = shap_values_array[0]
+            else:
+                shap_values_single = shap_values_array
+            
+            # Créer un dict {feature_name: shap_value}
+            shap_dict = {}
+            for i, feature_name in enumerate(feature_names):
+                if i < len(shap_values_single):
+                    shap_value = float(shap_values_single[i])
+                    # Ne garder que les features avec impact significatif (> 0.001)
+                    if abs(shap_value) > 0.001:
+                        shap_dict[feature_name] = shap_value
+            
+            # Trier par valeur absolue et garder les top 30
+            sorted_shap = sorted(shap_dict.items(), key=lambda x: abs(x[1]), reverse=True)[:30]
+            shap_dict_top = dict(sorted_shap)
+            
+            self.logger.info(f"✅ SHAP calculé: {len(shap_dict_top)} features significatives")
+            
+            return shap_dict_top
+            
+        except Exception as e:
+            self.logger.error(f"❌ Erreur calcul SHAP: {e}")
+            import traceback
+            self.logger.error(traceback.format_exc())
+            return {}
     
     def _load_features_from_ml_model(self, chapter: str) -> List[str]:
         """Charger les features directement depuis les classes ML_MODEL"""

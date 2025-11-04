@@ -259,7 +259,10 @@ async def save_prediction_to_postgresql(declaration_id: str, chapter_id: str, pr
             "model_version": prediction_data.get('model_version', '1.0'),
             "processing_timestamp": datetime.now().isoformat(),
             "threshold_used": prediction_data.get('threshold_used', load_decision_thresholds(chapter_id).get('optimal_threshold', 0.2)),
-            "feature_importance": json.dumps(prediction_data.get('feature_importance', {})),
+            "feature_importance": json.dumps({
+                **prediction_data.get('feature_importance', {}),
+                **prediction_data.get('shap_values', {})  # ✅ NOUVEAU: Inclure les valeurs SHAP
+            }),
             "explanation": prediction_data.get('explanation', '')
         }
         
@@ -494,12 +497,16 @@ async def predict(chapter: str, file: UploadFile = File(...)):
                     )
                     
                     # Sauvegarder la prédiction
+                    # ⚠️ NOTE: Pour les CSV avec individual_predictions, les valeurs SHAP ne sont pas disponibles
+                    # car elles nécessitent un recalcul pour chaque déclaration
                     prediction_data = {
                         "fraud_probability": pred["fraud_probability"],
                         "decision": pred["decision"],
                         "predicted_fraud": pred["predicted_fraud"],
                         "confidence_score": pred["confidence_score"],
-                        "context": clean_data_for_json(extracted_data)
+                        "context": clean_data_for_json(extracted_data),
+                        # SHAP values seront calculées lors du prochain appel à get_declaration_details
+                        "shap_values": pred.get("shap_values", {})
                     }
                     await save_prediction_to_postgresql(
                         declaration_id, 
@@ -1555,8 +1562,8 @@ async def get_declaration_details(chapter: str, declaration_data: Dict[str, Any]
         # Utiliser le pipeline OCR pour analyser la déclaration
         pipeline = AdvancedOCRPipeline()
         
-        # Obtenir la prédiction complète
-        prediction_result = pipeline.predict_fraud(declaration_data, chapter, 'expert')
+        # Obtenir la prédiction complète AVEC SHAP (car c'est la page de détails)
+        prediction_result = pipeline.predict_fraud(declaration_data, chapter, 'expert', calculate_shap=True)
         
         # Utiliser directement les données de déclaration comme contexte
         context = declaration_data
@@ -1888,7 +1895,9 @@ async def get_declaration_details(chapter: str, declaration_data: Dict[str, Any]
             "prediction": {
                 "fraud_probability": prediction_result.get("fraud_probability", 0.0),
                 "decision": prediction_result.get("decision", "conforme"),
-                "confidence_score": prediction_result.get("confidence_score", 0.0)
+                "confidence_score": prediction_result.get("confidence_score", 0.0),
+                # ✅ NOUVEAU: Inclure les valeurs SHAP pour expliquer la prédiction
+                "shap_values": prediction_result.get("shap_values", {})
             },
             "context": {
                 "poids_net_kg": declaration_data.get('POIDS_NET_KG', context.get('POIDS_NET_KG', 0)),
@@ -2568,6 +2577,56 @@ async def get_declaration_details(declaration_id: str = Query(...)):
                     "threshold_used": float(pred.get("threshold_used", 0)) if pred.get("threshold_used") is not None else 0.0
                 }
             }
+            
+            # ✅ NOUVEAU: Calculer les valeurs SHAP si elles ne sont pas en base
+            # Essayer de récupérer les valeurs SHAP depuis feature_importance
+            shap_values_from_db = {}
+            if isinstance(feature_importance, dict):
+                # Les valeurs SHAP sont stockées dans feature_importance
+                # Filtrer pour ne garder que les valeurs numériques significatives
+                shap_values_from_db = {
+                    k: v for k, v in feature_importance.items() 
+                    if isinstance(v, (int, float)) and abs(v) > 0.001
+                }
+            
+            # ✅ OPTIMISÉ: Recalculer SHAP seulement si vraiment nécessaire (déclaration frauduleuse ou à haut risque)
+            # et seulement si pas déjà en base (pour éviter les recalculs inutiles)
+            fraud_prob = float(pred.get("fraud_probability", 0)) if pred.get("fraud_probability") is not None else 0.0
+            threshold_used = float(pred.get("threshold_used", 0.5)) if pred.get("threshold_used") is not None else 0.5
+            is_fraud_or_high_risk = fraud_prob > threshold_used or fraud_prob > 0.3
+            
+            if not shap_values_from_db and is_fraud_or_high_risk and declaration:
+                try:
+                    logger.info(f"🔄 Calcul SHAP à la demande pour déclaration frauduleuse {declaration_id} (prob: {fraud_prob:.3f})")
+                    # Reconstruire les données de déclaration pour le recalcul
+                    declaration_data_for_recalc = {
+                        'POIDS_NET_KG': declaration.get('poids_net_kg', 0),
+                        'NOMBRE_COLIS': declaration.get('nombre_colis', 0),
+                        'VALEUR_CAF': declaration.get('valeur_caf', 0),
+                        'CODE_SH_COMPLET': declaration.get('code_sh_complet', ''),
+                        'CODE_PAYS_ORIGINE': declaration.get('code_pays_origine', ''),
+                        'REGIME_COMPLET': declaration.get('regime_complet', ''),
+                        'CODE_PRODUIT_STR': declaration.get('code_produit_str', ''),
+                        'PAYS_ORIGINE_STR': declaration.get('pays_origine_str', ''),
+                        'REGIME_FISCAL': declaration.get('regime_fiscal', 0),
+                        'PRECISION_UEMOA': declaration.get('precision_uemoa', 0),
+                    }
+                    
+                    # Utiliser le pipeline pour recalculer AVEC SHAP (calculate_shap=True)
+                    pipeline = AdvancedOCRPipeline()
+                    chapter_id_db = declaration.get('chapter_id', 'chap30')
+                    prediction_result_recalc = pipeline.predict_fraud(declaration_data_for_recalc, chapter_id_db, 'expert', calculate_shap=True)
+                    shap_values_from_db = prediction_result_recalc.get('shap_values', {})
+                    logger.info(f"✅ SHAP calculé à la demande: {len(shap_values_from_db)} features")
+                except Exception as shap_error:
+                    logger.warning(f"⚠️ Erreur calcul SHAP: {shap_error}")
+                    shap_values_from_db = {}
+            elif not shap_values_from_db and not is_fraud_or_high_risk:
+                logger.debug(f"⏩ SHAP non recalculé pour déclaration conforme {declaration_id} (prob: {fraud_prob:.3f})")
+            
+            # Ajouter les valeurs SHAP à prediction_data
+            prediction_data['shap_values'] = shap_values_from_db
+            logger.info(f"📊 SHAP pour {declaration_id}: {len(shap_values_from_db)} features (premières: {list(shap_values_from_db.keys())[:5]})")
         
         return {
             "success": True,
@@ -2765,6 +2824,8 @@ async def postgresql_upload_declaration(
                         "context": clean_data_for_json(prediction_result.get("context", {})),
                         "risk_analysis": prediction_result.get("risk_analysis", {}),
                         "feature_importance": prediction_result.get("feature_importance", {}),
+                        # ✅ NOUVEAU: Inclure les valeurs SHAP pour explication de la prédiction
+                        "shap_values": prediction_result.get("shap_values", {}),
                         "model_version": "1.0",
                         "threshold_used": prediction_result.get("optimal_threshold_used", load_decision_thresholds(chapter_id).get("optimal_threshold", 0.2))
                     }
