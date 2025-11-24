@@ -3200,7 +3200,7 @@ def load_model_performance_data(model_filter: Optional[str] = None, chapter_filt
                 except Exception as e:
                     logger.error(f"Erreur lors du chargement des métriques pour {chapter}: {e}")
                     chapter_data = {}
-        
+            
             performance_data[chapter] = chapter_data
             
         return performance_data
